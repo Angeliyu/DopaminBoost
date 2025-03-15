@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "angularjs-datepicker": "^2.1.23",
+    "canvas-confetti": "^1.9.3"
+  }
+}
