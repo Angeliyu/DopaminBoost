@@ -62,8 +62,8 @@
                         <tr style="width: 100%; font-size: 18px;">
                             <td style="width: 20%; text-align: left;" class="header_image"><img src="<?= base_url('assets/img/Dopamin_Boost_logo.png') ?>" alt="Logo" style="max-width: 80%; margin-top: 0.7%; margin-left: -1%;" /></td>
                             <td style="width: 60%; text-align: center;"><p style="text-align: bottom; color: grey;">Kanban Name</p> <br/> <h2 class="page-title"><b> {{ formDetail.name }} </b> <br> <button class="btn btn-success" style="font-size: 20px; border-radius: 12px; padding: 5px;" ng-if="formDetail.todo.length < 1 && formDetail.doing.length < 1 && formDetail.done.length > 1" ng-click="kanban_complete()">COMPLETE KANBAN</button> </h2></td>
-                            <td style="width: 10%; text-align: center; word-wrap: normal;"><i class="fa fa-bell" style="cursor: pointer; font-size: 50px; color: #0d6efd;" ng-click="openNotificationData()"></i><br/>Notification</td>
-                            <td style="width: 10%; text-align: center; word-wrap: normal;"><i class="fa fa-users" style="cursor: pointer; font-size: 50px; color: #0d6efd;" ng-click="showMember()"></i><br/>Member Lists</td>
+                            <td style="width: 10%; text-align: center; word-wrap: normal;" ng-if="!logout_status"><i class="fa fa-bell" style="cursor: pointer; font-size: 50px; color: #0d6efd;" ng-click="openNotificationData()"></i><br/>Notification</td>
+                            <td style="width: 10%; text-align: center; word-wrap: normal;" ng-if="!logout_status"><i class="fa fa-users" style="cursor: pointer; font-size: 50px; color: #0d6efd;" ng-click="showMember()"></i><br/>Member Lists</td>
                         </tr>
                     </tbody>
                 </table>
@@ -72,15 +72,15 @@
             <div class="flex-container">  
                 <div class="sidebar">  
                     <h5>Sidebar</h5>  
-                    <a ng-href="<?= base_url('profile/') ?>{{userId}}" style="font-size: 25px;">Profile</a>
+                    <a href="#" ng-click="back_to_profile(userId,token)" style="font-size: 25px;">Profile</a>
                     <br/>
-                    <a href="#" style="font-size: 25px;">Logout</a>
+                    <a href="#" ng-click="logout()" style="font-size: 25px;">Logout</a>
                     <br/>
                     <div class="spacer"></div> <!-- Spacer to create space at the bottom -->  
                     <p style="text-align: center; font-size: 25px;">Username: <br/> <b> {{userData.name}} </b></p> <!-- Display user's name -->  
                 </div>  
 
-                <div class="main-content">  
+                <div class="main-content" ng-if="!logout_status">  
                     <!-- Todo Category -->
                     <div class="column">  
                         <div class="card">  
@@ -88,40 +88,49 @@
                                 <h5 class="card-title">Todo (Total task: <b>{{ formDetail.todo.length }}</b>) <i class="fa-solid fa-square-plus" style="float:right; color: #1361e7;" ng-click="addTodoData()"></i></h5>  
                                 <!-- Content for Todo -->  
                                 <p ng-if="formDetail.todo.length < 1">Todo task will list here</p>  
-                                <div ng-repeat="task in formDetail.todo" class="card mb-2">  <!-- Repeat for each task -->  
+                                <div ng-repeat="task in formDetail.todo" class="card mb-2" ng-style="{'border': isExpired(task.due_date) ? '2px solid red' : '2px solid green'}">  <!-- Repeat for each task -->  
                                     <div class="card-body">  
-                                        <h5 style="border-bottom: 1px solid black;">Title: <br/>{{ task.content_title }}</h5>  
-                                        <br/>  
-                                        <div ng-if="task.type == 2"  style="border-bottom: 1px solid black;">  <!-- Check if task type is checkbox -->  
-                                            <p>Check List:</p>  
-                                            <ul>  
-                                                <li ng-repeat="item in task.todo_parsedDescription">
-                                                    {{ item.item }}
-                                                    <span ng-if="item.checked == 'true'">
-                                                        <i class="bi bi-check-circle text-success"></i> <!-- Bootstrap Icons -->
-                                                    </span>
-                                                </li>
-                                            </ul>  
-                                        </div> 
-                                        <div ng-if="task.type == 1">  <!-- Check if task type is plain text -->  
-                                            <p style="border-bottom: 1px solid black;">Description: <br/>{{ task.content_description }}</p>  
-                                        </div>  
-                                        <br/>  
-                                        <p style="border-bottom: 1px solid black;">Due Date: <br/>{{ task.due_date }}</p>  
-                                        <br/>  
-                                        <p style="border-bottom: 1px solid black;"><i>Created by: <br/> {{ task.created_user }}</i></p>  
-                                        <br/>
-                                        <div class="btn-group w-100" role="group">
-                                            <button class="btn btn-danger me-2" style="color: white; font-weight: bold;" ng-click="deleteTodoTask(task.id)">
-                                                Delete
-                                            </button>
-                                            <button class="btn btn-info me-2" style="font-weight: bold;" ng-click="editTodoData(task)" >
-                                                Edit
-                                            </button>
-                                            <button class="btn btn-success me-2" style="font-weight: bold;" ng-click="moveToDoing(task.id)" >
-                                                Move To Doing
-                                            </button>
+                                        <!-- Collapsible Title Section -->
+                                        <h5 style="border-bottom: 1px solid black; cursor: pointer;" ng-click="todo_task.expanded = !todo_task.expanded">
+                                            <i class="fa" ng-class="{'fa-chevron-down': todo_task.expanded, 'fa-chevron-right': !todo_task.expanded}" title="Click to expand/collapse"></i>
+                                            Title: <br/>{{ task.content_title }}
+                                        </h5>
+
+                                        <!-- Task Details (Shown Only When Expanded) -->
+                                        <div ng-if="todo_task.expanded">
+                                            <br/>  
+                                            <div ng-if="task.type == 2"  style="border-bottom: 1px solid black;">  <!-- Check if task type is checkbox -->  
+                                                <p>Check List:</p>  
+                                                <ul>  
+                                                    <li ng-repeat="item in task.todo_parsedDescription">
+                                                        {{ item.item }}
+                                                        <span ng-if="item.checked == 'true'">
+                                                            <i class="bi bi-check-circle text-success"></i> <!-- Bootstrap Icons -->
+                                                        </span>
+                                                    </li>
+                                                </ul>  
+                                            </div> 
+                                            <div ng-if="task.type == 1">  <!-- Check if task type is plain text -->  
+                                                <p style="border-bottom: 1px solid black;">Description: <br/>{{ task.content_description }}</p>  
+                                            </div>  
+                                            <br/>  
+                                            <p style="border-bottom: 1px solid black;">Due Date: <br/>{{ task.due_date }}</p>  
+                                            <br/>  
+                                            <p style="border-bottom: 1px solid black;"><i>Created by: <br/> {{ task.created_user }}</i></p>  
+                                            <br/>
+                                            <div class="btn-group w-100" role="group">
+                                                <button class="btn btn-danger me-2" style="color: white; font-weight: bold;" ng-click="deleteTodoTask(task.id)">
+                                                    Delete
+                                                </button>
+                                                <button class="btn btn-info me-2" style="font-weight: bold;" ng-click="editTodoData(task)" >
+                                                    Edit
+                                                </button>
+                                                <button class="btn btn-success me-2" style="font-weight: bold;" ng-click="moveToDoing(task.id)" >
+                                                    Move To Doing
+                                                </button>
+                                            </div>
                                         </div>
+                                        <!-- End of collapsible content -->
                                     </div>  
                                 </div>  
                             </div>  
@@ -135,39 +144,46 @@
                                 <h5 class="card-title">Doing (Total task: <b>{{ formDetail.doing.length }}</b>) <i class="fa-solid fa-square-plus" style="float:right; color: #1361e7;" ng-click="addDoingData()"></i></h5>  
                                 <!-- Content for Doing -->  
                                 <p ng-if="formDetail.doing.length < 1">Doing task will list here</p>  
-                                <div ng-repeat="task in formDetail.doing" class="card mb-2">  <!-- Repeat for each task -->  
+                                <div ng-repeat="task in formDetail.doing" class="card mb-2" ng-style="{'border': isExpired(task.due_date) ? '2px solid red' : '2px solid green'}">  <!-- Repeat for each task -->  
                                     <div class="card-body">  
-                                        <h5 style="border-bottom: 1px solid black;">Title: <br/>{{ task.content_title }}</h5>  
-                                        <br/>  
-                                        <div ng-if="task.type == 2" style="border-bottom: 1px solid black;">  <!-- Check if task type is checkbox -->  
-                                            <p>Check List:</p>  
-                                            <ul>  
-                                                <li ng-repeat="item in task.doing_parsedDescription">
-                                                    {{ item.item }}
-                                                    <span ng-if="item.checked == 'true'">
-                                                        <i class="bi bi-check-circle text-success"></i> <!-- Bootstrap Icons -->
-                                                    </span>
-                                                </li>
-                                            </ul>  
-                                        </div> 
-                                        <div ng-if="task.type == 1">  <!-- Check if task type is plain text -->  
-                                            <p style="border-bottom: 1px solid black;">Description: <br/>{{ task.content_description }}</p>  
-                                        </div>    
-                                        <br/>  
-                                        <p style="border-bottom: 1px solid black;">Due Date: <br/>{{ task.due_date }}</p>  
-                                        <br/>  
-                                        <p style="border-bottom: 1px solid black;"><i>Created by: <br/>{{ task.created_user }}</i></p>  
-                                        <br/>
-                                        <div class="btn-group w-100" role="group">
-                                            <button class="btn btn-danger me-2" style="color: white; font-weight: bold;" ng-click="deleteDoingTask(task.id)">
-                                                Delete
-                                            </button>
-                                            <button class="btn btn-info me-2" style="font-weight: bold;" ng-click="editDoingData(task)" >
-                                                Edit
-                                            </button>
-                                            <button class="btn btn-success me-2" style="font-weight: bold;" ng-click="complete(task.id)" >
-                                                Complete
-                                            </button>
+                                        <!-- Collapsible Title Section -->
+                                        <h5 style="border-bottom: 1px solid black;" ng-click="doing_task.expanded = !doing_task.expanded">
+                                            <i class="fa" ng-class="{'fa-chevron-down': doing_task.expanded, 'fa-chevron-right': !doing_task.expanded}" title="Click to expand/collapse"></i>
+                                            Title: <br/>{{ task.content_title }}
+                                        </h5>  
+                                        <!-- Task Details (Shown Only When Expanded) -->
+                                        <div ng-if="doing_task.expanded">
+                                            <br/>  
+                                            <div ng-if="task.type == 2" style="border-bottom: 1px solid black;">  <!-- Check if task type is checkbox -->  
+                                                <p>Check List:</p>  
+                                                <ul>  
+                                                    <li ng-repeat="item in task.doing_parsedDescription">
+                                                        {{ item.item }}
+                                                        <span ng-if="item.checked == 'true'">
+                                                            <i class="bi bi-check-circle text-success"></i> <!-- Bootstrap Icons -->
+                                                        </span>
+                                                    </li>
+                                                </ul>  
+                                            </div> 
+                                            <div ng-if="task.type == 1">  <!-- Check if task type is plain text -->  
+                                                <p style="border-bottom: 1px solid black;">Description: <br/>{{ task.content_description }}</p>  
+                                            </div>    
+                                            <br/>  
+                                            <p style="border-bottom: 1px solid black;">Due Date: <br/>{{ task.due_date }}</p>  
+                                            <br/>  
+                                            <p style="border-bottom: 1px solid black;"><i>Created by: <br/>{{ task.created_user }}</i></p>  
+                                            <br/>
+                                            <div class="btn-group w-100" role="group">
+                                                <button class="btn btn-danger me-2" style="color: white; font-weight: bold;" ng-click="deleteDoingTask(task.id)">
+                                                    Delete
+                                                </button>
+                                                <button class="btn btn-info me-2" style="font-weight: bold;" ng-click="editDoingData(task)" >
+                                                    Edit
+                                                </button>
+                                                <button class="btn btn-success me-2" style="font-weight: bold;" ng-click="complete(task.id)" >
+                                                    Complete
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>  
                                 </div>  
@@ -184,26 +200,34 @@
                                 <p ng-if="formDetail.done.length < 1">Completed tasks</p>
                                 <div ng-repeat="task in formDetail.done" class="card mb-2">  <!-- Repeat for each task -->  
                                     <div class="card-body">  
-                                        <h5 style="border-bottom: 1px solid black;">Title: <br/>{{ task.content_title }}</h5>  
-                                        <br/>  
-                                        <div ng-if="task.type == 2"  style="border-bottom: 1px solid black;">  <!-- Check if task type is checkbox -->  
-                                            <p>Check List:</p>  
-                                            <ul>  
-                                                <li ng-repeat="item in task.done_parsedDescription">
-                                                    {{ item.item }}
-                                                    <span ng-if="item.checked == 'true'">
-                                                        <i class="bi bi-check-circle text-success"></i> <!-- Bootstrap Icons -->
-                                                    </span>
-                                                </li>
-                                            </ul>  
-                                        </div> 
-                                        <div ng-if="task.type == 1">  <!-- Check if task type is plain text -->  
-                                            <p style="border-bottom: 1px solid black;">Description: <br/>{{ task.content_description }}</p>  
-                                        </div>  
-                                        <br/>  
-                                        <p style="border-bottom: 1px solid black;">Due Date: <br/>{{ task.due_date }}</p>  
-                                        <br/>  
-                                        <p style="border-bottom: 1px solid black;"><i>Created by: <br/>{{ task.created_user }}</i></p>  
+                                        <!-- Collapsible Title Section -->
+                                        <h5 style="border-bottom: 1px solid black;" ng-click="done_task.expanded = !done_task.expanded">
+                                        <i class="fa" ng-class="{'fa-chevron-down': done_task.expanded, 'fa-chevron-right': !done_task.expanded}" title="Click to expand/collapse"></i>
+                                            Title: <br/>{{ task.content_title }}
+                                        </h5>  
+
+                                        <!-- Task Details (Shown Only When Expanded) -->
+                                        <div ng-if="done_task.expanded">
+                                            <br/>  
+                                            <div ng-if="task.type == 2"  style="border-bottom: 1px solid black;">  <!-- Check if task type is checkbox -->  
+                                                <p>Check List:</p>  
+                                                <ul>  
+                                                    <li ng-repeat="item in task.done_parsedDescription">
+                                                        {{ item.item }}
+                                                        <span ng-if="item.checked == 'true'">
+                                                            <i class="bi bi-check-circle text-success"></i> <!-- Bootstrap Icons -->
+                                                        </span>
+                                                    </li>
+                                                </ul>  
+                                            </div> 
+                                            <div ng-if="task.type == 1">  <!-- Check if task type is plain text -->  
+                                                <p style="border-bottom: 1px solid black;">Description: <br/>{{ task.content_description }}</p>  
+                                            </div>  
+                                            <br/>  
+                                            <p style="border-bottom: 1px solid black;">Due Date: <br/>{{ task.due_date }}</p>  
+                                            <br/>  
+                                            <p style="border-bottom: 1px solid black;"><i>Created by: <br/>{{ task.created_user }}</i></p>  
+                                        </div>
                                     </div>  
                                 </div>    
                             </div>  
@@ -447,7 +471,7 @@
                                 <small>Leader Email: {{ formDetail.leader_email }}</small>
                             </div>
                             <div ng-if="userId != formDetail.owned_by">
-                                <button class="btn btn-info btn-sm">Request Leader</button>
+                                <button class="btn btn-info btn-sm" ng-click="requestLeader()">Request Leader</button>
                             </div>
                             <br/>
                             <b>Members:</b>
@@ -462,11 +486,12 @@
                                 </div>
                             </li>
                             <br/>
+                            <small style="color:red;"><i> *only leader able to invite user</i></small>
                             <div class="btn-group w-100" role="group">
-                                <button class="btn btn-danger me-2" style="color: white; font-weight: bold;" ng-click="leaveKanban">
+                                <button class="btn btn-danger me-2" style="color: white; font-weight: bold;" ng-click="leaveKanban(userId)">
                                     Leave Kanban
                                 </button>
-                                <button class="btn btn-success" style="font-weight: bold;" ng-click="openInvite()" >
+                                <button class="btn btn-success" style="font-weight: bold;" ng-click="openInvite()" ng-disabled="userId != formDetail.owned_by">
                                     Invite Member
                                 </button>
                             </div>
@@ -503,7 +528,7 @@
 
         <!-- Notification Modal -->
         <div class="modal fade" id="notificationModal" tabindex="-1" aria-labelledby="notificationModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
+            <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="notificationModalLabel">Notification</h5>
@@ -512,14 +537,14 @@
                     <div class="modal-body">
                         <div class="mt-2 mb-2">  
                             <table class="tablesaw table mb-0" wt-responsive-table>  
-                                <thead>  
+                                <thead ng-if="userId != formDetail.owned_by">  
                                     <tr>  
                                         <th scope="col" width="75%">Message</th>  
-                                        <th scope="col" width="15%">Date</th>
+                                        <th scope="col" width="25%">Date</th>
                                     </tr>  
-                                </thead>  
-                                <tbody>  
-                                    <tr ng-repeat="item in notification">  
+                                </thead> 
+                                <tbody ng-if="userId != formDetail.owned_by">  
+                                    <tr ng-repeat="item in notification | orderBy:'-created_date'">  
                                         <td class="align-middle" ng-bind-html="item.message"></td>  
                                         <td class="align-middle">{{ item.created_date }}</td>
                                     </tr>  
@@ -528,6 +553,41 @@
                                             <strong>-- No Notifications Found --</strong>  
                                         </td>  
                                     </tr>  
+                                </tbody>   
+                                <thead ng-if="userId == formDetail.owned_by">  
+                                    <tr>  
+                                        <th scope="col" width="60%">Message</th>  
+                                        <th scope="col" width="15%">Date</th>
+                                        <th scope="col" width="15%" class="text-center">Action</th>  
+                                        <th scope="col" width="10%" class="text-center">Status</th>  
+                                    </tr>  
+                                </thead> 
+                                <tbody ng-if="userId == formDetail.owned_by">  
+                                    <tr ng-repeat="item in notification | orderBy:'-created_date'">  
+                                        <td class="align-middle" ng-bind-html="item.message"></td>  
+                                        <td class="align-middle">{{ item.created_date }}</td>
+                                        <td class="align-middle text-center" ng-if="item.type == 16 && item.is_accepted == 0">
+                                            <button class="btn btn-success btn-sm" style="color: white; font-weight: bold;" ng-click="approveRequest(item.id)">
+                                                Approve
+                                            </button>
+                                            <button class="btn btn-danger btn-sm" style="font-weight: bold;" ng-click="rejectRequest(item.id)" >
+                                                Reject
+                                            </button>
+                                        </td>
+                                        <td class="align-middle" ng-if="item.type == 16 && (item.is_accepted == 1 || item.is_accepted == 2)">
+                                        </td>
+                                        <td class="align-middle" ng-if="item.type != 1 && item.is_read == 1">
+                                        </td>
+                                        <td class="align-middle">
+                                            <p ng-if="notification.is_accepted == 1"><span class="badge bg-success">Accepted</span></p>
+                                            <p ng-if="notification.is_accepted == 2"><span class="badge bg-danger">Rejected</span></p>
+                                        </td>
+                                    </tr>  
+                                    <tr ng-show='false'>  
+                                        <td class="align-middle" colspan="3" align="center" data-title=" ">  
+                                            <strong>-- No Notifications Found --</strong>  
+                                        </td>  
+                                    </tr>    
                                 </tbody>  
                                 <tfoot>  
                                 </tfoot>  
@@ -548,28 +608,80 @@
                 $scope.errorAlert = false;
                 $scope.error_msg = "";
                 $scope.id = "<?= isset($id) && !empty($id) ? $id : '' ?>";
+                $scope.token = "<?= isset($token) && !empty($token) ? $token : '' ?>";
+                $scope.userId = "<?= isset($user_id) && !empty($user_id) ? $user_id : '' ?>";
                 $scope.minDate = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD" 
-
-                // get user id from url start
-                //// Get the full URL  
-                var fullPath = $location.absUrl();   
-
-                //// Regular expression to match userId  
-                var match = fullPath.match(/[?&]userId=(\d+)/); // Matches userId= followed by digits  
-
-                if (match) {  
-                    $scope.userId = match[1]; // Get the first capturing group  
-                } else {  
-                    $scope.userId = null; // If no match found  
-                }  
-
-                //// Get the full URL end
 
                 //// Log the userId for confirmation  
                 console.log("userId:", $scope.userId); 
                 // get user id from url end
 
-                // $scope.token = getCookie("token");
+                $scope.back_to_profile = function(user_id, token) {
+                    $http.get("<?= base_url('profile'); ?>/" + user_id + "/" + token)
+                    .then(function(response) {
+                        if (response.data.error) {
+                            alert(response.data.error); // Show alert for unauthorized access
+
+                            setTimeout(function() {  
+                                window.location.href = '<?= base_url('') ?>';
+                            }, 500);
+
+                        } else {
+                            window.location.href = "<?= base_url('profile'); ?>/" + user_id + "/" + token;
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error("Error:", error);
+                        alert(error);
+                    });
+                };
+
+
+                $scope.logout = function() {
+
+                    const data = {  
+                        user_id: $scope.userId,  
+                        token: $scope.token, 
+                    };
+
+                    console.log("data", data);
+                            
+                    // Make the API call  
+                    $http.post("<?= base_url('api/logout') ?>", data).then(function(response) {  
+                        if (response.data.status == "OK") {
+                            // Handle success  
+                            console.log('Logout successfully:', response.data); 
+
+                            $scope.logout_status = true;
+
+                            window.location.href = '<?= base_url('') ?>';
+
+                        } else {
+                            $scope.errorAlert = true;
+                            $scope.error_msg = response.data.result;
+                            console.log("error", response);
+                            alert(response.data.message); 
+
+                            setTimeout(function() {  
+                                window.location.href = '<?= base_url('') ?>';
+                            }, 500);
+                        }
+                    })  
+                    .catch(function(error) {  
+                        // Handle error  
+                        console.error('Error logout:', error);  
+                    });                         
+
+                }
+
+                $scope.isExpired = function(dueDate) {
+                    if (!dueDate) return false; // If no due date, default to not expired
+
+                    var currentDate = new Date(); // Get the current date
+                    var taskDueDate = new Date(dueDate); // Convert task due_date to Date object
+
+                    return taskDueDate < currentDate; // Return true if expired, false otherwise
+                };
 
                 $scope.kanban_complete = function() {
 
@@ -592,11 +704,11 @@
 
                                 // Delay redirect to let animation play
                                 setTimeout(function() {
-                                    location.href = '<?= base_url('profile/') ?>' + $scope.userId;
+                                    location.href = "<?= base_url('profile'); ?>/" + $scope.userId + "/" + $scope.token;
                                 }, 5050);  
 
                             } else {  
-                                alert(response.data.result);  
+                                alert(response.data.message);
                             }  
 
                         }, function(response) {  
@@ -608,7 +720,6 @@
                 }
 
                 $scope.showMember = function() {  
-
                     $('#membersModal').modal('show'); // Show the modal  
                 };  
 
@@ -678,10 +789,10 @@
                         if (response.data.status == "OK") {
                             // Handle success  
                             console.log('Task added successfully:', response.data);
-                            location.href = '<?= base_url('kanban/') ?>' + $scope.id + '?userId=' + $scope.userId;
+                            location.href = '<?= base_url('kanban/') ?>' + $scope.id + '/' + $scope.userId + '/' + $scope.token;
                         }   else {
                             $scope.errorAlert = true;
-                            $scope.error_msg = response.data.result;
+                            $scope.error_msg = response.data.message;
                         }
                     })  
                         .catch(function(error) {  
@@ -757,10 +868,10 @@
                         if (response.data.status == "OK") {
                             // Handle success  
                             console.log('Task added successfully:', response.data);
-                            location.href = '<?= base_url('kanban/') ?>' + $scope.id + '?userId=' + $scope.userId;
+                            location.href = '<?= base_url('kanban/') ?>' + $scope.id + '/' + $scope.userId + '/' + $scope.token;
                         }   else {
                             $scope.errorAlert = true;
-                            $scope.error_msg = response.data.result;
+                            $scope.error_msg = response.data.message;
                         }
                     })  
                         .catch(function(error) {  
@@ -844,10 +955,10 @@
                             // Handle success  
                             console.log('Task updated successfully:', response.data);  
                             $('#editTodoTaskModal').modal('hide'); // Hide the modal  
-                            location.href = '<?= base_url('kanban/') ?>' + $scope.id + '?userId=' + $scope.userId;
+                            location.href = '<?= base_url('kanban/') ?>' + $scope.id + '/' + $scope.userId + '/' + $scope.token;
                         }   else {
                             $scope.errorAlert = true;
-                            $scope.error_msg = response.data.result;
+                            $scope.error_msg = response.data.message;
                         }
                     })  
                         .catch(function(error) {  
@@ -928,16 +1039,16 @@
                             // Handle success  
                             console.log('Task updated successfully:', response.data);  
                             $('#editDoingTaskModal').modal('hide'); // Hide the modal  
-                            location.href = '<?= base_url('kanban/') ?>' + $scope.id + '?userId=' + $scope.userId;
+                            location.href = '<?= base_url('kanban/') ?>' + $scope.id + '/' + $scope.userId + '/' + $scope.token;
                         }   else {
                             $scope.errorAlert = true;
-                            $scope.error_msg = response.data.result;
+                            $scope.error_msg = response.data.message;
                         }
                     })  
-                        .catch(function(error) {  
-                            // Handle error  
-                            console.error('Error updating task:', error);  
-                        });  
+                    .catch(function(error) {  
+                        // Handle error  
+                        console.error('Error updating task:', error);  
+                    });  
                 };  
                 // edit doing task end
 
@@ -957,9 +1068,9 @@
                         $http.post("<?= base_url('api/go_to_doing') ?>", data).then(function(response) {  
                             if (response.data.status == "OK") {  
                                 alert("Task moved successfully!");  
-                                location.href = '<?= base_url('kanban/') ?>' + $scope.id + '?userId=' + $scope.userId;
+                                location.href = '<?= base_url('kanban/') ?>' + $scope.id + '/' + $scope.userId + '/' + $scope.token;
                             } else {  
-                                alert(response.data.result);  
+                                alert(response.data.message);
                             }  
                         }, function(response) {  
                             alert("Error: " + response.data.result);  
@@ -993,13 +1104,11 @@
 
                                 // Delay redirect to let animation play for 3 seconds
                                 setTimeout(function() {
-                                    location.href = '<?= base_url('kanban/') ?>' + $scope.id + '?userId=' + $scope.userId;
+                                    location.href = '<?= base_url('kanban/') ?>' + $scope.id + '/' + $scope.userId + '/' + $scope.token;
                                 }, 5000);  
 
-
-                                // location.href = '<?= base_url('kanban/') ?>' + $scope.id + '?userId=' + $scope.userId;
                             } else {  
-                                alert(response.data.result);  
+                                alert(response.data.message);
                             }  
                         }, function(response) {  
                             alert("Error: " + response.data.result);  
@@ -1033,8 +1142,110 @@
                     }
                 }
 
+                // request leader (for member)
+                $scope.requestLeader = function() {
+
+                    // Prepare the data to be sent to the API  
+                    var dataToSend = {  
+                        member_id: $scope.userId,
+                        kanban_id: $scope.formDetail.id,
+                    };  
+
+                    if (confirm("Are you sure you want to request leader role of this kanban?")) {
+
+                        // Call the delete API  
+                        $http.post("<?= base_url('api/requestLeader') ?>", dataToSend).then(function(response) {  
+                            if (response.data.status == "OK") {  
+
+                                alert("Request Created! Please Wait Leader to Approve."); 
+
+                                setTimeout(function() {  
+                                    location.href = '<?= base_url('kanban/') ?>' + $scope.id + '/' + $scope.userId + '/' + $scope.token;
+                                }, 1000); 
+
+                            } else {  
+                                alert(response.data.message);
+                            }  
+                        }, function(response) {  
+                            alert("Error: " + response.data.result);  
+                        });  
+                    } else {
+                        return; 
+                    }
+
+                }
+
+                // approve request leader (for leader)
+                $scope.approveRequest = function(notification_id) {
+
+                    // Prepare the data to be sent to the API  
+                    var dataToSend = {  
+                        leader_id: $scope.userId,
+                        kanban_id: $scope.formDetail.id,
+                        notification_id: notification_id
+                    };  
+
+                    if (confirm("Are you sure you want to approve the request and transfer leader role?")) {
+
+                        // Call the delete API  
+                        $http.post("<?= base_url('api/acceptRequest') ?>", dataToSend).then(function(response) {  
+                            if (response.data.status == "OK") {  
+
+                                alert("Request Approved and Leader Transferred!"); 
+
+                                setTimeout(function() {  
+                                    location.href = '<?= base_url('kanban/') ?>' + $scope.id + '/' + $scope.userId + '/' + $scope.token;
+                                }, 1000); 
+
+                            } else {  
+                                alert(response.data.message);
+                            }  
+                        }, function(response) {  
+                            alert(response.data.message);
+                        });  
+                    } else {
+                        return; 
+                    }
+
+                }
+
+                // approve request leader (for leader)
+                $scope.rejectRequest = function(notification_id) {
+
+                    // Prepare the data to be sent to the API  
+                    var dataToSend = {  
+                        leader_id: $scope.userId,
+                        kanban_id: $scope.formDetail.id,
+                        notification_id: notification_id
+                    };  
+
+                    if (confirm("Are you sure you want to reject the request leader role?")) {
+
+                        // Call the API  
+                        $http.post("<?= base_url('api/rejectRequest') ?>", dataToSend).then(function(response) {  
+                            if (response.data.status == "OK") {  
+
+                                alert("Request Rejected!"); 
+
+                                setTimeout(function() {  
+                                    location.href = '<?= base_url('kanban/') ?>' + $scope.id + '/' + $scope.userId + '/' + $scope.token;
+                                }, 1000); 
+
+                            } else {  
+                                alert(response.data.message);
+                            }  
+                        }, function(response) {  
+                            alert("Error: " + response.data.result);  
+                        });  
+                    } else {
+                        return; 
+                    }
+
+                }
+
                 // transfer owner of kanban (only by current leader)
                 $scope.transferOwner = function(memberId) {  
+
                     // Prepare the data to be sent to the API  
                     var dataToSend = {  
                         member_id: memberId,
@@ -1044,13 +1255,13 @@
 
                     if (confirm("Are you sure you want to transfer your leader role to this member?")) {
 
-                        // Call the delete API  
+                        // Call the API  
                         $http.post("<?= base_url('api/transferLeader') ?>", dataToSend).then(function(response) {  
                             if (response.data.status == "OK") {  
                                 alert("Leader Transfer successfully!"); 
-                                location.href = '<?= base_url('kanban/') ?>' + $scope.id + '?userId=' + $scope.userId; 
+                                location.href = '<?= base_url('kanban/') ?>' + $scope.id + '/' + $scope.userId + '/' + $scope.token;
                             } else {  
-                                alert(response.data.result);  
+                                alert(response.data.message);
                             }  
                         }, function(response) {  
                             alert("Error: " + response.data.result);  
@@ -1058,6 +1269,7 @@
                     } else {
                         return; 
                     }
+
                 };  
 
                 // remove member from kanban
@@ -1074,9 +1286,9 @@
                         $http.post("<?= base_url('api/removeMember') ?>", dataToSend).then(function(response) {  
                             if (response.data.status == "OK") {  
                                 alert("Member Removed successfully!"); 
-                                location.href = '<?= base_url('kanban/') ?>' + $scope.id + '?userId=' + $scope.userId; 
+                                location.href = '<?= base_url('kanban/') ?>' + $scope.id + '/' + $scope.userId + '/' + $scope.token;
                             } else {  
-                                alert(response.data.result);  
+                                alert(response.data.message);
                             }  
                         }, function(response) {  
                             alert("Error: " + response.data.result);  
@@ -1102,7 +1314,7 @@
                                 console.log('available user', $scope.available_users);
                                 $('#inviteModal').modal('show'); // Show the modal  
                             } else {  
-                                alert(response.data.result);  
+                                alert(response.data.message);
                             }  
                         }, function(response) {  
                             alert("Error: " + response.data.result);  
@@ -1128,8 +1340,9 @@
                             if (response.data.status == "OK") {  
                                 $('#inviteModal').modal('hide'); // hide the modal
                                 $('#membersModal').modal('hide');  
+                                location.href = '<?= base_url('kanban/') ?>' + $scope.id + '/' + $scope.userId + '/' + $scope.token;
                             } else {  
-                                alert(response.data.result);  
+                                alert(response.data.message);
                             }  
                         }, function(response) {  
                             alert("Error: " + response.data.result);  
@@ -1153,9 +1366,13 @@
                         $http.post("<?= base_url('api/quitKanban') ?>", dataToSend).then(function(response) {  
                             if (response.data.status == "OK") {  
                                 alert("You Are Quit This Kanban."); 
-                                location.href = '<?= base_url('profile/') ?>' + $scope.userId; 
+                                
+                                setTimeout(function() {  
+                                    location.href = '<?= base_url('profile/') ?>' + $scope.userId + '/' + $scope.token; 
+                                }, 1000); 
+
                             } else {  
-                                alert(response.data.result);  
+                                alert(response.data.message);
                             }  
                         }, function(response) {  
                             alert("Error: " + response.data.result);  
@@ -1181,7 +1398,7 @@
                                 $scope.formDetail.todo = $scope.formDetail.todo.filter(task => task.id !== taskId);  
                                 alert("Task deleted successfully!");  
                             } else {  
-                                alert(response.data.result);  
+                                alert(response.data.message);
                             }  
                         }, function(response) {  
                             alert("Error: " + response.data.result);  
@@ -1208,7 +1425,7 @@
                                 $scope.formDetail.doing = $scope.formDetail.doing.filter(task => task.id !== taskId);  
                                 alert("Task deleted successfully!");  
                             } else {  
-                                alert(response.data.result);  
+                                alert(response.data.message);
                             }  
                         }, function(response) {  
                             alert("Error: " + response.data.result);  
@@ -1234,7 +1451,7 @@
                                 $scope.formDetail.done = $scope.formDetail.done.filter(task => task.id !== taskId);  
                                 alert("Task deleted successfully!");  
                             } else {  
-                                alert(response.data.result);  
+                                alert(response.data.message);
                             }  
                         }, function(response) {  
                             alert("Error: " + response.data.result);  
@@ -1250,102 +1467,268 @@
 
                 console.log("id", $scope.id);
                 console.log("subtitle", $scope.mode);
-                
-                if ($scope.id != "") {
 
-                    $http.get("<?= base_url('api/kanban_details') ?>/" + $scope.id ).then(function(response) {
 
-                        if (response.data.status == "OK") {
-                            console.log("kanban response", response);
-                            $scope.errorAlert = false;
-                            $scope.formDetail = response.data.result.kanbanDetail;
-                            console.log("formDetail", $scope.formDetail);
-                            
-                            // Initialize an array to hold parsed descriptions  
-                            $scope.todo_parsedDescriptions = [];
-                            $scope.doing_parsedDescriptions = [];
-                            $scope.done_parsedDescriptions = [];  
+                $scope.authorization_and_get = function() {
 
-                            // Iterate over each task in the todo array  
-                            $scope.formDetail.todo.forEach(function(task) {  
-                                if (task.type == 2) { // Check if task type is checkbox  
-                                    try {  
-                                        // Parse the content_description and store it in the array  
-                                        task.todo_parsedDescription = JSON.parse(task.content_description);  
-                                    } catch (e) {  
-                                        console.error("Error parsing JSON for task todo:", task, e);  
-                                        task.todo_parsedDescription = []; // Fallback to an empty array if parsing fails  
-                                    }  
-                                } else {  
-                                    task.todo_parsedDescription = null; // For other task types, set to null or any default value  
-                                }  
-                            });
-                            
-                            // Iterate over each task in the todo array  
-                            $scope.formDetail.doing.forEach(function(task) {  
-                                if (task.type == 2) { // Check if task type is checkbox  
-                                    try {  
-                                        // Parse the content_description and store it in the array  
-                                        task.doing_parsedDescription = JSON.parse(task.content_description);  
-                                    } catch (e) {  
-                                        console.error("Error parsing JSON for task doing:", task, e);  
-                                        task.doing_parsedDescription = []; // Fallback to an empty array if parsing fails  
-                                    }  
-                                } else {  
-                                    task.doing_parsedDescription = null; // For other task types, set to null or any default value  
-                                }  
-                            });
+                    if ($scope.id != "") {
 
-                            // Iterate over each task in the todo array  
-                            $scope.formDetail.done.forEach(function(task) {  
-                                if (task.type == 2) { // Check if task type is checkbox  
-                                    try {  
-                                        // Parse the content_description and store it in the array  
-                                        task.done_parsedDescription = JSON.parse(task.content_description);  
-                                    } catch (e) {  
-                                        console.error("Error parsing JSON for task done:", task, e);  
-                                        task.done_parsedDescription = []; // Fallback to an empty array if parsing fails  
-                                    }  
-                                } else {  
-                                    task.done_parsedDescription = null; // For other task types, set to null or any default value  
-                                }  
-                            });
+                        //// check whether existing members or leader
+                        // Prepare the data to be sent to the API  
+                        var dataToSend = {  
+                            user_id: $scope.userId,
+                            kanban_id: $scope.id,
+                            token: $scope.token,
+                        };  
 
-                        } else {
-                            $scope.errorAlert = true;
-                            $scope.error_msg = response.data.result;
-                        }
+                        // Call the API  
+                        $http.post("<?= base_url('api/checkAuthorization') ?>", dataToSend).then(function(response) {  
+                            if (response.data.status == "OK") {  
 
-                    }, function(response) {
-                        console.log("response", response);
-                        $scope.errorAlert = true;
-                        $scope.error_msg = response.data.result;
-                    });
+                                console.log(response.data.message);
 
-                    $http.get("<?= base_url('api/kanban_notification') ?>/" + $scope.id ).then(function(response) {
+                                // get kanban details
+                                $http.get("<?= base_url('api/kanban_details') ?>/" + $scope.id ).then(function(response) {
 
-                        if (response.data.status == "OK") {
-                            console.log("kanban notification response", response);
-                            $scope.errorAlert = false;
-                            $scope.notification = response.data.result.notificationDetail;
-                            console.log("notification", $scope.notification);
+                                    if (response.data.status == "OK") {
+                                        console.log("kanban response", response);
+                                        $scope.errorAlert = false;
+                                        $scope.formDetail = response.data.result.kanbanDetail;
+                                        console.log("formDetail", $scope.formDetail);
+                                        
+                                        // Initialize an array to hold parsed descriptions  
+                                        $scope.todo_parsedDescriptions = [];
+                                        $scope.doing_parsedDescriptions = [];
+                                        $scope.done_parsedDescriptions = [];  
 
-                            $scope.notification.forEach(function(item) {
-                                item.message = $sce.trustAsHtml(item.message);
-                            });
+                                        // Iterate over each task in the todo array  
+                                        $scope.formDetail.todo.forEach(function(task) {  
+                                            if (task.type == 2) { // Check if task type is checkbox  
+                                                try {  
+                                                    // Parse the content_description and store it in the array  
+                                                    task.todo_parsedDescription = JSON.parse(task.content_description);  
+                                                } catch (e) {  
+                                                    console.error("Error parsing JSON for task todo:", task, e);  
+                                                    task.todo_parsedDescription = []; // Fallback to an empty array if parsing fails  
+                                                }  
+                                            } else {  
+                                                task.todo_parsedDescription = null; // For other task types, set to null or any default value  
+                                            }  
+                                        });
+                                        
+                                        // Iterate over each task in the todo array  
+                                        $scope.formDetail.doing.forEach(function(task) {  
+                                            if (task.type == 2) { // Check if task type is checkbox  
+                                                try {  
+                                                    // Parse the content_description and store it in the array  
+                                                    task.doing_parsedDescription = JSON.parse(task.content_description);  
+                                                } catch (e) {  
+                                                    console.error("Error parsing JSON for task doing:", task, e);  
+                                                    task.doing_parsedDescription = []; // Fallback to an empty array if parsing fails  
+                                                }  
+                                            } else {  
+                                                task.doing_parsedDescription = null; // For other task types, set to null or any default value  
+                                            }  
+                                        });
 
-                        } else {
-                            $scope.errorAlert = true;
-                            $scope.error_msg = response.data.result;
-                        }
+                                        // Iterate over each task in the todo array  
+                                        $scope.formDetail.done.forEach(function(task) {  
+                                            if (task.type == 2) { // Check if task type is checkbox  
+                                                try {  
+                                                    // Parse the content_description and store it in the array  
+                                                    task.done_parsedDescription = JSON.parse(task.content_description);  
+                                                } catch (e) {  
+                                                    console.error("Error parsing JSON for task done:", task, e);  
+                                                    task.done_parsedDescription = []; // Fallback to an empty array if parsing fails  
+                                                }  
+                                            } else {  
+                                                task.done_parsedDescription = null; // For other task types, set to null or any default value  
+                                            }  
+                                        });
 
-                    }, function(response) {
-                        console.log("response", response);
-                        $scope.errorAlert = true;
-                        $scope.error_msg = response.data.result;
-                    });
+                                    } else {
+                                        $scope.errorAlert = true;
+                                        $scope.error_msg = response.data.result;
+                                    }
 
+                                }, function(response) {
+                                    console.log("response", response);
+                                    $scope.errorAlert = true;
+                                    $scope.error_msg = response.data.result;
+                                });
+
+                                $http.get("<?= base_url('api/kanban_notification') ?>/" + $scope.id ).then(function(response) {
+
+                                    if (response.data.status == "OK") {
+                                        console.log("kanban notification response", response);
+                                        $scope.errorAlert = false;
+                                        $scope.notification = response.data.result.notificationDetail;
+                                        console.log("notification", $scope.notification);
+
+                                        $scope.notification.forEach(function(item) {
+                                            item.message = $sce.trustAsHtml(item.message);
+                                        });
+
+                                    } else {
+                                        $scope.errorAlert = true;
+                                        $scope.error_msg = response.data.result;
+                                    }
+
+                                }, function(response) {
+                                    console.log("response", response);
+                                    $scope.errorAlert = true;
+                                    $scope.error_msg = response.data.result;
+                                });
+
+                            } else {  
+                                alert(response.data.message);
+
+                                setTimeout(function() {  
+                                    window.location.href = '<?= base_url('') ?>';
+                                }, 500);
+
+                            }  
+                        }, function(response) {  
+                            alert("Error: " + response.data.result);  
+
+                            // setTimeout(function() {  
+                            //     location.href = '<?= base_url('profile/') ?>' + $scope.userId + '/' + $scope.token; 
+                            // }, 1000); 
+
+                            setTimeout(function() {  
+                                window.location.href = '<?= base_url('') ?>';
+                            }, 500);
+                        });  
+                    }
                 }
+
+                $scope.authorization_and_get();
+                
+                // if ($scope.id != "") {
+
+                //     //// check whether existing members or leader
+                //     // Prepare the data to be sent to the API  
+                //     var dataToSend = {  
+                //         user_id: $scope.userId,
+                //         kanban_id: $scope.id,
+                //         token: $scope.token,
+                //     };  
+
+                //     // Call the delete API  
+                //     $http.post("<?= base_url('api/checkAuthorization') ?>", dataToSend).then(function(response) {  
+                //         if (response.data.status == "OK") {  
+
+                //             console.log(response.data.message);
+
+                //             // get kanban details
+                //             $http.get("<?= base_url('api/kanban_details') ?>/" + $scope.id ).then(function(response) {
+
+                //                 if (response.data.status == "OK") {
+                //                     console.log("kanban response", response);
+                //                     $scope.errorAlert = false;
+                //                     $scope.formDetail = response.data.result.kanbanDetail;
+                //                     console.log("formDetail", $scope.formDetail);
+                                    
+                //                     // Initialize an array to hold parsed descriptions  
+                //                     $scope.todo_parsedDescriptions = [];
+                //                     $scope.doing_parsedDescriptions = [];
+                //                     $scope.done_parsedDescriptions = [];  
+
+                //                     // Iterate over each task in the todo array  
+                //                     $scope.formDetail.todo.forEach(function(task) {  
+                //                         if (task.type == 2) { // Check if task type is checkbox  
+                //                             try {  
+                //                                 // Parse the content_description and store it in the array  
+                //                                 task.todo_parsedDescription = JSON.parse(task.content_description);  
+                //                             } catch (e) {  
+                //                                 console.error("Error parsing JSON for task todo:", task, e);  
+                //                                 task.todo_parsedDescription = []; // Fallback to an empty array if parsing fails  
+                //                             }  
+                //                         } else {  
+                //                             task.todo_parsedDescription = null; // For other task types, set to null or any default value  
+                //                         }  
+                //                     });
+                                    
+                //                     // Iterate over each task in the todo array  
+                //                     $scope.formDetail.doing.forEach(function(task) {  
+                //                         if (task.type == 2) { // Check if task type is checkbox  
+                //                             try {  
+                //                                 // Parse the content_description and store it in the array  
+                //                                 task.doing_parsedDescription = JSON.parse(task.content_description);  
+                //                             } catch (e) {  
+                //                                 console.error("Error parsing JSON for task doing:", task, e);  
+                //                                 task.doing_parsedDescription = []; // Fallback to an empty array if parsing fails  
+                //                             }  
+                //                         } else {  
+                //                             task.doing_parsedDescription = null; // For other task types, set to null or any default value  
+                //                         }  
+                //                     });
+
+                //                     // Iterate over each task in the todo array  
+                //                     $scope.formDetail.done.forEach(function(task) {  
+                //                         if (task.type == 2) { // Check if task type is checkbox  
+                //                             try {  
+                //                                 // Parse the content_description and store it in the array  
+                //                                 task.done_parsedDescription = JSON.parse(task.content_description);  
+                //                             } catch (e) {  
+                //                                 console.error("Error parsing JSON for task done:", task, e);  
+                //                                 task.done_parsedDescription = []; // Fallback to an empty array if parsing fails  
+                //                             }  
+                //                         } else {  
+                //                             task.done_parsedDescription = null; // For other task types, set to null or any default value  
+                //                         }  
+                //                     });
+
+                //                 } else {
+                //                     $scope.errorAlert = true;
+                //                     $scope.error_msg = response.data.result;
+                //                 }
+
+                //             }, function(response) {
+                //                 console.log("response", response);
+                //                 $scope.errorAlert = true;
+                //                 $scope.error_msg = response.data.result;
+                //             });
+
+                //             $http.get("<?= base_url('api/kanban_notification') ?>/" + $scope.id ).then(function(response) {
+
+                //                 if (response.data.status == "OK") {
+                //                     console.log("kanban notification response", response);
+                //                     $scope.errorAlert = false;
+                //                     $scope.notification = response.data.result.notificationDetail;
+                //                     console.log("notification", $scope.notification);
+
+                //                     $scope.notification.forEach(function(item) {
+                //                         item.message = $sce.trustAsHtml(item.message);
+                //                     });
+
+                //                 } else {
+                //                     $scope.errorAlert = true;
+                //                     $scope.error_msg = response.data.result;
+                //                 }
+
+                //             }, function(response) {
+                //                 console.log("response", response);
+                //                 $scope.errorAlert = true;
+                //                 $scope.error_msg = response.data.result;
+                //             });
+
+                //         } else {  
+                //             alert(response.data.message);
+
+                //             setTimeout(function() {  
+                //                 window.history.back(); // Go back to the previous page
+                //             }, 500); 
+
+                //         }  
+                //     }, function(response) {  
+                //         alert("Error: " + response.data.result);  
+
+                //         setTimeout(function() {  
+                //             location.href = '<?= base_url('profile/') ?>' + $scope.userId + '/' + $scope.token; 
+                //         }, 1000); 
+                //     });  
+                // }
 
                 if ($scope.userId != "") {
 
@@ -1358,7 +1741,7 @@
                             console.log("response userData", $scope.userData);
                         } else {
                             $scope.errorAlert = true;
-                            $scope.error_msg = response.data.result;
+                            $scope.error_msg = response.data.message;
                         }
 
                     }, function(response) {
@@ -1366,55 +1749,6 @@
                         $scope.errorAlert = true;
                         $scope.error_msg = response.data.result;
                     });
-                }
-
-                $scope.saveData = function() {
-
-
-                    var tobeSubmit = $scope.formDetail;
-                    tobeSubmit["mode"] = $scope.mode;
-                    tobeSubmit["id"] = $scope.id;
-                    console.log("tobeSubmit", tobeSubmit);
-                    loadingshow();
-                    $http.post("<?= base_url('api/submitUser') ?>", tobeSubmit).then(function(response) {
-                        loadinghide();
-                        if (response.data.status == "OK") {
-                            location.href = '<?= base_url('admin_userList') ?>';
-                            // console.log(response.data);
-                        } else {
-                            console.log("no ok", response.data);
-                            alert(response.data.result);
-                        }
-
-                    }, function(response) {
-                        loadinghide();
-                        console.log("failed", response.data);
-                        alert(response);
-
-                    });
-
-                }
-
-                $scope.delete = function() {
-
-                    var tobeSubmit = $scope.formDetail;
-                    tobeSubmit["mode"] = $scope.mode;
-                    tobeSubmit["id"] = $scope.id;
-
-                    $http.post("<?= base_url('api/deleteUser') ?>", tobeSubmit).then(function(response) {
-
-                        if (response.data.status == "OK") {
-                            location.href = '<?= base_url('admin_userList') ?>';
-                        } else {
-                            alert(response.data.result);
-                        }
-
-                    }, function(response) {
-
-                        alert(response.data.result);
-
-                    });
-
                 }
 
             }).directive('ngConfirmClick', [

@@ -19,6 +19,8 @@ class KanbanList_api extends MY_apicontroller {
 
         $this->load->model("User_model");
 
+        $this->load->model("User_kanban_model");
+
         $this->load->model("Notification_model");
 
     }
@@ -109,8 +111,7 @@ class KanbanList_api extends MY_apicontroller {
 				$mode = $this->input->post("mode", true);
 				$id = $this->input->post("id", true);
 
-				// $adminID = $this->adminAuth($token);
-				$name = $this->input->post("name", true);
+				$kanban_name = $this->input->post("name", true);
                 $owned_by = $this->input->post("owned_by", true);
                 $raw_member = $this->input->post("member", true);
 
@@ -119,16 +120,17 @@ class KanbanList_api extends MY_apicontroller {
                 } 
 				
 				$sql = array(
-					'name' => $name,
+					'name' => $kanban_name,
                     'owned_by' => $owned_by,
 				);
 
                 $ID = null;
 
+                $this->db->trans_start();
+
 				switch ($mode) {
 					case "Add":
 						
-						// $sql['created_user_id'] = $adminID;
 						$sql['created_date'] = date("Y-m-d H:i:s");
 
                         if (!empty($raw_member)) {
@@ -137,38 +139,108 @@ class KanbanList_api extends MY_apicontroller {
 
 						$ID = $this->{$this->data['main_model']}->insert($sql);
 
+                        // create new leader data in user_kanban table
+                        $leader_data = array(
+                            'kanban_id' => $ID,
+                            'user_id' => $owned_by,
+                            'created_date' => date("Y-m-d H:i:s")
+                        );
+
+                        $this->User_kanban_model->insert($leader_data);
+
+                        // create new member data in user_kanban table
+                        if (!empty($raw_member) && is_array($raw_member)) {
+                            foreach ($raw_member as $member_id) {
+                                $user_kanban_sql = array(
+                                    'kanban_id' => $ID,
+                                    'user_id' => $member_id,
+                                    'created_date' => date("Y-m-d H:i:s")
+                                );
+                                $this->User_kanban_model->insert($user_kanban_sql);
+                            }
+                        }
+
 						break;
 					case "Edit":
 
-						$ID = $id;
-
-						$eachData = $this->{$this->data['main_model']}->getOne(array(
-							'id' => $ID,
+						$kanbanData = $this->{$this->data['main_model']}->getOne(array(
+							'id' => $id,
 						));
 
-						if (empty($eachData)) {
-							throw new Exception("Data No Exist");
+						if (empty($kanbanData)) {
+                            // Return JSON error response
+                            echo json_encode([
+                                'status' => 'ERROR',
+                                'message' => 'Kanban Not Exist',
+                            ]);
+                            return;
 						}
 
-						// $sql['last_modified_user_id'] = $adminID;
 						$sql['modified_date'] = date("Y-m-d H:i:s");
 
                         if (!empty($raw_member)) {
                             $sql['member'] = $member;
                         }
 
-						$this->{$this->data['main_model']}->update(array(
+						$ID = $this->{$this->data['main_model']}->update(array(
 							'id' => $id,
 						), $sql);
-						
+                        
+                        //// update records in user_kanban
+                        // combine owned_by and members
+                        $all_members = array_unique(array_merge([$owned_by], $raw_member));
+
+                        // fetch current user_kanban records by kanban_id
+                        $existing_records = $this->User_kanban_model->get_where(array(
+                            'kanban_id' => $id,
+                            'is_deleted' => 0
+                        ));
+
+                        $existing_user_ids = array_column($existing_records, 'user_id');
+
+                        // update user(s) not in all_members as deleted
+                        foreach ($existing_user_ids as $user_id) {
+                            if (!in_array($user_id, $all_members)) {
+
+                                $this->User_kanban_model->update(array(
+                                    'user_id' => $user_id,
+                                    'kanban_id' => $id
+                                ), array(
+                                    'is_deleted' => 1,
+                                    'modified_date' => date("Y-m-d H:i:s")
+                                ));
+
+                            }
+                        }
+
+                        // insert new member(s) not already in user_kanban
+                        foreach ($all_members as $member_id) {
+                            if (!in_array($member_id, $existing_user_ids)) {
+
+                                $this->User_kanban_model->insert(array(
+                                    'kanban_id' => $id,
+                                    'user_id' => $member_id,
+                                    'created_date' => date("Y-m-d H:i:s")
+                                ));
+
+                            }
+                        }
+
 						break;
 				}
+
+                $this->db->trans_complete();
 
 				$this->json_output(array(
 					'id' => $ID,
 				));
 			} else {
-				throw new Exception("Invalid Parameters");
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Invalid Parameters',
+                ]);
+                return;
 			}
 		} catch (Exception $e) {
 			$this->json_output_error($e->getMessage());
@@ -182,19 +254,24 @@ class KanbanList_api extends MY_apicontroller {
 
 			// $adminID = $this->adminAuth($token);
 
-			$eachData = $this->{$this->data['main_model']}->getOne(array(
+			$kanbanData = $this->{$this->data['main_model']}->getOne(array(
 				'id' => $ID,
 				'is_deleted' => 0,
 			));
 
-			if (empty($eachData)) {
-				throw new Exception("Data Not Found");
+			if (empty($kanbanData)) {
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Kanban Not Found',
+                ]);
+                return;
 			}
 
-			$eachData['id'] = (int) $eachData['id'];
+			$kanbanData['id'] = (int) $kanbanData['id'];
 
 			$this->json_output(array(
-				'kanbanDetail' => $eachData,
+				'kanbanDetail' => $kanbanData,
 			));
 		} catch (Exception $e) {
 
@@ -218,15 +295,20 @@ class KanbanList_api extends MY_apicontroller {
 
                 $ID = $this->input->post("id", true);
 
-                // $adminID = $this->adminAuth($token);
-
-                $eachData = $this->{$this->data['main_model']}->getOne(array(
+                $kanbanData = $this->{$this->data['main_model']}->getOne(array(
                     $this->data['primaryKey'] => $ID,
                 ));
-                if (empty($eachData)) {
-                    throw new Exception("data not exists");
+
+                if (empty($kanbanData)) {
+                    // Return JSON error response
+					echo json_encode([
+						'status' => 'ERROR',
+						'message' => 'Kanban Not Exist',
+					]);
+					return;
                 }
 
+                $this->db->trans_start();
 
                 $this->{$this->data['main_model']}->update(array(
                     $this->data['primaryKey'] => $ID,
@@ -235,12 +317,45 @@ class KanbanList_api extends MY_apicontroller {
                     'modified_date' => date("Y-m-d H:i:s"),
                 ));
 
-                
+                //// update records in user_kanban
+                $current_records = $this->User_kanban_model->get_where(array(
+                    'kanban_id' => $ID,
+                    'is_deleted' => 0
+                ));
+
+                if (!empty($current_records)) {
+
+                    // extract user_ids from the records
+                    $kanban_users = array_column($current_records, 'user_id');
+
+                    // update records to is_deleted = 1
+                    foreach ($kanban_users as $user) {
+
+                        $this->User_kanban_model->update(array(
+                            'kanban_id' => $ID,
+                            'user_id' => $user
+                        ), array(
+                            'is_deleted' => 1,
+                            'modified_date' => date("Y-m-d H:i:s"),
+                        ));
+
+                    }                    
+
+                }
+
+                $this->db->trans_complete();
+
                 $this->json_output(array(
                     $this->data['primaryKey'] => $ID,
                 ));
+
             } else {
-                throw new Exception("Invalid param");
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Invalid Parameters',
+                ]);
+                return;
             }
         } catch (Exception $e) {
             $this->json_output_error($e->getMessage());
@@ -305,30 +420,36 @@ class KanbanList_api extends MY_apicontroller {
         try {  
             if (isset($_SERVER["CONTENT_TYPE"]) && strpos($_SERVER["CONTENT_TYPE"], "application/json") !== false) {  
                 $_POST = array_merge($_POST, (array) json_decode(trim(file_get_contents('php://input')), true));  
+
                 $kanban_id = $this->input->post("kanban_id", true);  
 
                 if ($kanban_id != 0) {  
-                    // Get the kanban details  
-                    $kanban = $this->{$this->data['main_model']}->getOne(array(  
-                        "is_deleted" => 0,  
-                        $this->data['primaryKey'] => $kanban_id,  
-                    ));  
-
-                    // 'member' column contains comma-separated user IDs  
-                    $memberIds = explode(',', $kanban['member']);  
                     
+                    $this->load->model("User_kanban_model");
 
-                     // Use get_where with where_in for member IDs  
-                    $members = $this->User_model->fetch2("id,name");
+                    $all_user_kanban = $this->User_kanban_model->get_where(array(
+                        'is_deleted' => 0,
+                        'kanban_id' => $kanban_id,
+                    ));
 
-                    // Filter members by the extracted IDs  
-                    $members = array_filter($members, function($member) use ($memberIds) {  
-                        return in_array($member['id'], $memberIds);  
-                    });  
+                    $all_members = [];
 
-                    // Return the members as part of the response  
+                    foreach ($all_user_kanban as $user) {
+                        
+                        $user_details = $this->User_model->getOne(array(
+                            'is_deleted' => 0,
+                            'id' => $user['user_id']
+                        ));
+
+                        // If user exists, add to $all_members
+                        if (!empty($user_details)) {
+                            $all_members[] = $user_details;
+                        }
+
+                    }
+
                     $this->json_output(array(  
-                        'userData' => $members,  
+                        'userData' => $all_members,  
                     ));  
                 } else {  
                     throw new Exception("Invalid Kanban ID");  
@@ -341,13 +462,101 @@ class KanbanList_api extends MY_apicontroller {
         }  
     }
 
-    // frontend    
+    // frontend 
+    public function checkAuthorization()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+		header("Access-Control-Allow-Origin: *");
+		header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
+
+
+		try {
+
+			if (isset($_SERVER["CONTENT_TYPE"]) && strpos($_SERVER["CONTENT_TYPE"], "application/json") !== false) {
+				$_POST = array_merge($_POST, (array) json_decode(trim(file_get_contents('php://input')), true));
+
+				$member_id = $this->input->post("user_id", true);
+                $id = $this->input->post("kanban_id", true);
+                $token = $this->input->post("token", true);
+
+                $ID = $id;
+
+                $kanbanData = $this->{$this->data['main_model']}->getOne(array(
+                    'id' => $id,
+                    'is_deleted' => 0
+                ));
+
+                if (empty($kanbanData)) {
+                    // Return JSON error response
+					echo json_encode([
+						'status' => 'ERROR',
+						'message' => 'Kanban Not Exist',
+					]);
+					return;
+                }
+
+                $kanban_leader = $kanbanData['owned_by'];
+                $kanban_member = $kanbanData['member'];
+
+                // Convert members to an array (handle empty case)
+                $membersArray = !empty($kanban_member) ? explode(',', $kanban_member) : [];
+
+                // Combine leader and members
+                $all_members = array_unique(array_merge([$kanban_leader], $membersArray));
+
+                // check user token available
+                $user_availability = $this->User_model->getOne(array(
+                    'id' => $member_id,
+                    'token' => $token,
+                    'is_deleted' => 0
+                ));
+
+                // Check if the user is authorized
+                if (in_array($member_id, $all_members)) {
+
+                    if ($user_availability) {
+
+                        echo json_encode([
+                            'status' => 'OK',
+                            'message' => 'User is authorized'
+                        ]);
+                        return;
+
+                    } else {
+
+                        echo json_encode([
+                            'status' => 'ERROR',
+                            'message' => 'User did not logged in'
+                        ]);
+                        return;
+
+                    }
+
+                } else {
+                    echo json_encode([
+                        'status' => 'ERROR',
+                        'message' => 'User is not authorized'
+                    ]);
+                    return;
+                }
+
+			} else {
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Invalid Parameters',
+                ]);
+                return;
+			}
+		} catch (Exception $e) {
+			$this->json_output_error($e->getMessage());
+		}
+    }
+    
     public function kanbanDetail($ID)
 	{
 
 		try {
-
-			// $adminID = $this->adminAuth($token);
 
             $this->load->model("Kanban_details_todo_model");
             $this->load->model("Kanban_details_doing_model");
@@ -453,7 +662,12 @@ class KanbanList_api extends MY_apicontroller {
             }
 
 			if (empty($kanbanData)) {
-				throw new Exception("Data Not Found");
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Kanban Not Exist',
+                ]);
+                return;
 			}
 
 			$kanbanData['id'] = (int) $kanbanData['id'];
@@ -470,7 +684,7 @@ class KanbanList_api extends MY_apicontroller {
 		}
 	}
 
-    public function transferLeader($ID)
+    public function requestLeader()
 	{
         header('Content-Type: application/json; charset=utf-8');
 		header("Access-Control-Allow-Origin: *");
@@ -483,28 +697,350 @@ class KanbanList_api extends MY_apicontroller {
 				$_POST = array_merge($_POST, (array) json_decode(trim(file_get_contents('php://input')), true));
 
 				$member_id = $this->input->post("member_id", true);
+                $id = $this->input->post("kanban_id", true);
 
-				// $adminID = $this->adminAuth($token);
+                $ID = $id;
+
+                $kanbanData = $this->{$this->data['main_model']}->getOne(array(
+                    'id' => $id,
+                    'is_deleted' => 0
+                ));
+
+                if (empty($kanbanData)) {
+                    // Return JSON error response
+					echo json_encode([
+						'status' => 'ERROR',
+						'message' => 'Kanban Not Exist',
+					]);
+					return;
+                }
+
+                // check whether requested user owned other kanban
+                $check_availablility = $this->{$this->data['main_model']}->get_where(array(
+                    'owned_by' => $member_id,
+                    'is_deleted' => 0
+                ));
+
+                if (!empty($check_availablility)) {
+                    // Return JSON error response
+					echo json_encode([
+						'status' => 'ERROR',
+						'message' => 'You Already Owned Another Kanban',
+					]);
+					return;
+                } else {
+
+                    $old_leader = $kanbanData['owned_by'];
+                    $members = $kanbanData['member'];
+
+                    $old_leader_data = $this->User_model->getOne(array(
+                        'id' => $old_leader,
+                        'is_deleted' => 0
+                    ));
+
+                    $new_leader_data = $this->User_model->getOne(array(
+                        'id' => $member_id,
+                        'is_deleted' => 0
+                    ));
+
+                    $this->db->trans_start();
+
+                    // create a notification
+                    $this->Notification_model->insert(array(
+                        'type' => 16, // leader role request
+                        'created_by' => $member_id,
+                        'kanban_id' => $kanbanData['id'],
+                        'receiver' => $kanbanData['owned_by'],
+                        'message' => 'User <b>'. $new_leader_data['name'] .'</b> request the Leader role of Kanban: <b>' . $kanbanData['name'] . '</b>.',
+                        'created_date' => date("Y-m-d H:i:s"),
+                    ));
+
+                    $this->db->trans_complete();
+
+                    $this->json_output(array(
+                        'id' => $ID,
+                    ));
+                    
+                }
+
+			} else {
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Invalid Parameters',
+                ]);
+                return;
+			}
+		} catch (Exception $e) {
+			$this->json_output_error($e->getMessage());
+		}
+    }
+
+    public function acceptRequest()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+		header("Access-Control-Allow-Origin: *");
+		header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
+
+
+		try {
+
+			if (isset($_SERVER["CONTENT_TYPE"]) && strpos($_SERVER["CONTENT_TYPE"], "application/json") !== false) {
+				$_POST = array_merge($_POST, (array) json_decode(trim(file_get_contents('php://input')), true));
+
+				$member_id = $this->input->post("leader_id", true);
+                $id = $this->input->post("kanban_id", true);
+                $notification_id = $this->input->post("notification_id", true);
+
+				
+                $ID = $id;
+
+                $kanbanData = $this->{$this->data['main_model']}->getOne(array(
+                    'id' => $id,
+                    'is_deleted' => 0
+                ));
+
+                if (empty($kanbanData)) {
+                    // Return JSON error response
+					echo json_encode([
+						'status' => 'ERROR',
+						'message' => 'Kanban Not Exist',
+					]);
+					return;
+                }
+
+                // get notification data
+                $notificationData = $this->Notification_model->getOne(array(
+                    'id' => $notification_id,
+                    'is_deleted' => 0,
+                ));
+
+                if (empty($notificationData)) {
+                    // Return JSON error response
+					echo json_encode([
+						'status' => 'ERROR',
+						'message' => 'Notification Not Exist',
+					]);
+					return;
+                }
+
+                $old_leader = $kanbanData['owned_by'];
+
+                $new_leader = $notificationData['created_by'];
+
+                $members = $kanbanData['member'];
+
+                $old_leader_data = $this->User_model->getOne(array(
+                    'id' => $old_leader,
+                    'is_deleted' => 0
+                ));
+
+                $new_leader_data = $this->User_model->getOne(array(
+                    'id' => $new_leader,
+                    'is_deleted' => 0
+                ));
+
+                // Convert members to an array
+                $membersArray = !empty($members) ? explode(',', $members) : [];
+
+                // Add the old leader to the members list (if not already present)
+                if (!in_array($old_leader, $membersArray)) {
+                    $membersArray[] = $old_leader;
+                }
+
+                // Remove the new leader from the members list
+                $membersArray = array_filter($membersArray, function ($value) use ($new_leader) {
+                    return $value != $new_leader;
+                });
+
+                $sql = array(
+                    'owned_by' => $new_leader,
+				);
+
+                $this->db->trans_start();
+
+                $sql['member'] = implode(',', $membersArray);
+                $sql['modified_date'] = date("Y-m-d H:i:s");
+
+
+                $this->{$this->data['main_model']}->update(array(
+                    'id' => $id,
+                ), $sql);
+
+                // update the notification
+                $this->Notification_model->update(array(
+                    'id' => $notification_id,
+                    'is_deleted' => 0
+                ), array(
+                    'is_read' => 1,
+                    'is_accepted'=> 1,
+                    'modified_date' => date("Y-m-d H:i:s")
+                ));
+
+                // create a notification
+                $this->Notification_model->insert(array(
+                    'type' => 17, // approve leader role request
+                    'created_by' => $member_id,
+                    'kanban_id' => $kanbanData['id'],
+                    'receiver' => $new_leader,
+                    'message' => 'User <b>'. $old_leader_data['name'] .'</b> approve the request of Leader role from <b>' . $new_leader_data['name'] . '</b> for Kanban: <b>' . $kanbanData['name'] . '</b>.',
+                    'created_date' => date("Y-m-d H:i:s"),
+                ));
+
+                $this->db->trans_complete();
+
+				$this->json_output(array(
+					'id' => $ID,
+				));
+			} else {
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Invalid Parameters',
+                ]);
+                return;
+			}
+		} catch (Exception $e) {
+			$this->json_output_error($e->getMessage());
+		}
+    }
+
+    public function rejectRequest()
+	{
+        header('Content-Type: application/json; charset=utf-8');
+		header("Access-Control-Allow-Origin: *");
+		header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
+
+
+		try {
+
+			if (isset($_SERVER["CONTENT_TYPE"]) && strpos($_SERVER["CONTENT_TYPE"], "application/json") !== false) {
+				$_POST = array_merge($_POST, (array) json_decode(trim(file_get_contents('php://input')), true));
+
+				$member_id = $this->input->post("leader_id", true);
+                $id = $this->input->post("kanban_id", true);
+                $notification_id = $this->input->post("notification_id", true);
+
+                $ID = $id;
+
+                $kanbanData = $this->{$this->data['main_model']}->getOne(array(
+                    'id' => $id,
+                    'is_deleted' => 0,
+                ));
+
+                if (empty($kanbanData)) {
+                    // Return JSON error response
+					echo json_encode([
+						'status' => 'ERROR',
+						'message' => 'Kanban Not Exist',
+					]);
+					return;
+                }
+
+                // get notification data
+                $notificationData = $this->Notification_model->getOne(array(
+                    'id' => $notification_id,
+                    'is_deleted' => 0,
+                ));
+
+                if (empty($notificationData)) {
+                    // Return JSON error response
+					echo json_encode([
+						'status' => 'ERROR',
+						'message' => 'Notification Not Exist',
+					]);
+					return;
+                }
+
+                $old_leader = $kanbanData['owned_by'];
+                $member = $notificationData['created_by'];
+
+                $old_leader_data = $this->User_model->getOne(array(
+                    'id' => $old_leader,
+                ));
+
+                $requested_member_data = $this->User_model->getOne(array(
+                    'id' => $member,
+                ));
+
+                $this->db->trans_start();
+
+                // update request notification
+                $this->Notification_model->update(array(
+                    'id' => $notification_id,
+                    'is_deleted' => 0,
+                ), array(
+                    'is_read' => 1,
+                    'is_accepted' => 2,
+                    'modified_date' => date("Y-m-d H:i:s"),
+                ));
+
+                // create a notification
+                $this->Notification_model->insert(array(
+                    'type' => 18, // reject leader role request
+                    'created_by' => $member_id,
+                    'kanban_id' => $kanbanData['id'],
+                    'receiver' => $kanbanData['owned_by'],
+                    'message' => 'User <b>'. $old_leader_data['name'] .'</b> rejected the request of Leader role from <b>' . $requested_member_data['name'] . '</b> for Kanban: <b>' . $kanbanData['name'] . '</b>.',
+                    'created_date' => date("Y-m-d H:i:s"),
+                ));
+
+                $this->db->trans_complete();
+
+				$this->json_output(array(
+					'id' => $ID,
+				));
+			} else {
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Invalid Parameters',
+                ]);
+                return;
+			}
+		} catch (Exception $e) {
+			$this->json_output_error($e->getMessage());
+		}
+    }
+
+    public function transferLeader()
+	{
+        header('Content-Type: application/json; charset=utf-8');
+		header("Access-Control-Allow-Origin: *");
+		header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
+
+
+		try {
+
+			if (isset($_SERVER["CONTENT_TYPE"]) && strpos($_SERVER["CONTENT_TYPE"], "application/json") !== false) {
+				$_POST = array_merge($_POST, (array) json_decode(trim(file_get_contents('php://input')), true));
+
+				$member_id = $this->input->post("member_id", true);
                 $owned_by = $this->input->post("owned_by", true);
                 $id = $this->input->post("id", true);
 
-                
 				$sql = array(
                     'owned_by' => $member_id,
 				);
 
                 $ID = $id;
 
-                $eachData = $this->{$this->data['main_model']}->getOne(array(
+                $kanbanData = $this->{$this->data['main_model']}->getOne(array(
                     'id' => $id,
+                    'is_deleted' => 0
                 ));
 
-                if (empty($eachData)) {
-                    throw new Exception("Data No Exist");
+                if (empty($kanbanData)) {
+                    // Return JSON error response
+					echo json_encode([
+						'status' => 'ERROR',
+						'message' => 'Kanban Not Exist',
+					]);
+					return;
                 }
 
-                $old_leader = $eachData['owned_by'];
-                $members = $eachData['member'];
+                $old_leader = $kanbanData['owned_by'];
+                $members = $kanbanData['member'];
 
                 $old_leader_data = $this->User_model->getOne(array(
                     'id' => $old_leader,
@@ -527,8 +1063,8 @@ class KanbanList_api extends MY_apicontroller {
                     return $value != $member_id;
                 });
 
+                $this->db->trans_start();
 
-                // $sql['last_modified_user_id'] = $adminID;
                 $sql['member'] = implode(',', $membersArray);
                 $sql['modified_date'] = date("Y-m-d H:i:s");
 
@@ -541,17 +1077,23 @@ class KanbanList_api extends MY_apicontroller {
                 $this->Notification_model->insert(array(
                     'type' => 4, // become leader
                     'created_by' => $old_leader,
-                    'kanban_id' => $eachData['id'],
-                    'message' => 'User <b>'. $new_leader_data['name'] .'</b> become the Leader of Kanban: ' . $eachData['name'] . '. Transfer by: ' . $old_leader_data['name'],
+                    'kanban_id' => $kanbanData['id'],
+                    'message' => 'User <b>'. $new_leader_data['name'] .'</b> become the Leader of Kanban: <b>' . $kanbanData['name'] . '</b>. Transfer by: <b>' . $old_leader_data['name'] . '</b>.',
                     'created_date' => date("Y-m-d H:i:s"),
                 ));
 
+                $this->db->trans_complete();
 
 				$this->json_output(array(
 					'id' => $ID,
 				));
 			} else {
-				throw new Exception("Invalid Parameters");
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Invalid Parameters',
+                ]);
+                return;
 			}
 		} catch (Exception $e) {
 			$this->json_output_error($e->getMessage());
@@ -598,13 +1140,22 @@ class KanbanList_api extends MY_apicontroller {
 				// Convert back to a comma-separated string
 				$updated_members = implode(',', $memberArray);
 	
-				// Update the Kanban list with new members
-				$update_data = ['member' => $updated_members];
+                $sql = array(
+                    'member' => $updated_members,
+                    'modified_date' => date("Y-m-d H:i:s")
+				);
 
 
 				$this->{$this->data['main_model']}->update(
                     ['id' => $kanban_id]
-                , $update_data);
+                , $sql);
+
+                // insert new record in user_kanban
+                $this->User_kanban_model->insert(array(
+                    'user_id' => $user_id,
+                    'kanban_id' => $kanban_id,
+                    'created_date' => date("Y-m-d H:i:s")
+                ));
 
                 // update invite notification
                 $this->Notification_model->update(array(
@@ -619,6 +1170,7 @@ class KanbanList_api extends MY_apicontroller {
                     'type' => 5, // joined kanban
                     'created_by' => $user_id,
                     'kanban_id' => $kanbanData['id'],
+                    'receiver' => $user_id,
                     'message' => 'New member <b>' . $joinedUserData['name'] . '</b> just joined the Kanban.',
                     'created_date' => date("Y-m-d H:i:s"),
                 ));
@@ -629,7 +1181,12 @@ class KanbanList_api extends MY_apicontroller {
 					'kanban_id' => $kanbanData['id'],
 				));
 			} else {
-				throw new Exception("Invalid Parameters");
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Invalid Parameters',
+                ]);
+                return;
 			}
 		} catch (Exception $e) {
 			$this->json_output_error($e->getMessage());
@@ -662,28 +1219,6 @@ class KanbanList_api extends MY_apicontroller {
                     'id' => $user_id,
                 ));
 
-                $memberArray = [];
-
-				if (!empty($kanbanData['member'])) {
-					$memberArray = explode(',',$kanbanData['member']);
-				}
-
-				// add new member into memberArray
-				if (!in_array($user_id, $memberArray)) {
-					$memberArray[] = $user_id;
-				}
-	
-				// Convert back to a comma-separated string
-				$updated_members = implode(',', $memberArray);
-	
-				// Update the Kanban list with new members
-				$update_data = ['member' => $updated_members];
-
-
-				$this->{$this->data['main_model']}->update(
-                    ['id' => $kanban_id]
-                , $update_data);
-
                 // update invite notification
                 $this->Notification_model->update(array(
                     'id' => $notification_id,
@@ -694,10 +1229,12 @@ class KanbanList_api extends MY_apicontroller {
 				
                 // create a notification
                 $this->Notification_model->insert(array(
-                    'type' => 5, // joined kanban
+                    'type' => 11, // reject invitation
                     'created_by' => $user_id,
                     'kanban_id' => $kanbanData['id'],
-                    'message' => 'User <b>' . $UserData['name'] . '</b> rejected the invite.',
+                    'is_read' => 0,
+                    'is_accepted' => 2,
+                    'message' => 'User <b>' . $UserData['name'] . '</b> rejected the invite to join kanban <b>' . $kanbanData['name'] . '</b>.',
                     'created_date' => date("Y-m-d H:i:s"),
                 ));
 
@@ -707,7 +1244,12 @@ class KanbanList_api extends MY_apicontroller {
 					'kanban_id' => $kanbanData['id'],
 				));
 			} else {
-				throw new Exception("Invalid Parameters");
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Invalid Parameters',
+                ]);
+                return;
 			}
 		} catch (Exception $e) {
 			$this->json_output_error($e->getMessage());
@@ -734,19 +1276,28 @@ class KanbanList_api extends MY_apicontroller {
 
                 $ID = null;
 
-                $eachData = $this->{$this->data['main_model']}->getOne(array(
+                $kanbanData = $this->{$this->data['main_model']}->getOne(array(
                     'id' => $kanban_id,
                 ));
 
-                if (empty($eachData)) {
-                    throw new Exception("Data No Exist");
+                if (empty($kanbanData)) {
+                    // Return JSON error response
+					echo json_encode([
+						'status' => 'ERROR',
+						'message' => 'Kanban Not Exist',
+					]);
+					return;
                 }
 
                 $leaderData = $this->User_model->getOne(array(
-                    'id' => $eachData['owned_by'],
+                    'id' => $kanbanData['owned_by'],
                 ));
 
-                $members = $eachData['member'];
+                $memberData = $this->User_model->getOne(array(
+                    'id' => $member_id,
+                ));
+
+                $members = $kanbanData['member'];
 
                 if (!empty($members)) {
                     // Convert string into an array
@@ -759,16 +1310,6 @@ class KanbanList_api extends MY_apicontroller {
     
                     // Convert back to a comma-separated string
                     $updatedMembers = implode(',', $memberArray);
-
-                    // create a notification
-                    $this->Notification_model->insert(array(
-                        'type' => 3,
-                        'created_by' => $leaderData['id'],
-                        'receiver' => $member_id,
-                        'kanban_id' => $kanban_id,
-                        'message' => 'You have been remove by leader: ' . $leaderData['name'] . ', from Kanban ' . $eachData['name'] . ' .',
-                        'created_date' => date("Y-m-d H:i:s"),
-                    ));
 
                 } else {
 
@@ -783,20 +1324,44 @@ class KanbanList_api extends MY_apicontroller {
                     'modified_date' => date("Y-m-d H:i:s"),
                 ));
 
+                // update record in user_kanban
+                $this->User_kanban_model->update(array(
+                    'user_id' => $member_id,
+                    'kanban_id' => $kanban_id
+                ), array(
+                    'is_deleted' => 1,
+                    'modified_date' => date("Y-m-d H:i:s")
+                ));
+
+                // create a notification
+                $this->Notification_model->insert(array(
+                    'type' => 3,
+                    'created_by' => $leaderData['id'],
+                    'receiver' => $member_id,
+                    'kanban_id' => $kanban_id,
+                    'message' => 'User <b>' . $memberData['name'] . '</b> have been remove by leader: <b>' . $leaderData['name'] . '</b>, from Kanban <b>' . $kanbanData['name'] . '</b> .',
+                    'created_date' => date("Y-m-d H:i:s"),
+                ));
+
                 $this->db->trans_complete();
 
 				$this->json_output(array(
 					'id' => $ID,
 				));
 			} else {
-				throw new Exception("Invalid Parameters");
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Invalid Parameters',
+                ]);
+                return;
 			}
 		} catch (Exception $e) {
 			$this->json_output_error($e->getMessage());
 		}
     }
 
-    public function quitKanban($ID)
+    public function quitKanban()
 	{
         header('Content-Type: application/json; charset=utf-8');
 		header("Access-Control-Allow-Origin: *");
@@ -811,26 +1376,35 @@ class KanbanList_api extends MY_apicontroller {
 				$user_id = $this->input->post("user_id", true);
                 $kanban_id = $this->input->post("kanban_id", true);
 
-				// $adminID = $this->adminAuth($token);
-
                 $ID = null;
 
-                $eachData = $this->{$this->data['main_model']}->getOne(array(
+                $kanbanData = $this->{$this->data['main_model']}->getOne(array(
                     'id' => $kanban_id,
                 ));
 
-                if (empty($eachData)) {
-                    throw new Exception("Data No Exist");
+                if (empty($kanbanData)) {
+                    // Return JSON error response
+					echo json_encode([
+						'status' => 'ERROR',
+						'message' => 'Kanban Not Exist',
+					]);
+					return;
                 }
 
+                $this->db->trans_start();
+
                 // get current leader
-                $current_leader = $eachData['owned_by'];
+                $current_leader = $kanbanData['owned_by'];
 
                 // member list from 'member' column
-                $members = $eachData['member'];
+                $members = $kanbanData['member'];
 
                 // Convert members to an array
                 $membersArray = !empty($members) ? explode(',', $members) : [];
+
+                $current_user_data =  $this->User_model->getOne(array(
+                    'id' => $user_id,
+                ));
 
                 // situation 1 => if user_id == owned_by id
                 if ($user_id == $current_leader) {
@@ -851,6 +1425,41 @@ class KanbanList_api extends MY_apicontroller {
                         'modified_date' => date("Y-m-d H:i:s"),
                     ));
 
+                    $latest_kanban_info = $this->{$this->data['main_model']}->getOne(array(
+                        'id' => $kanban_id,
+                    ));
+
+                    $new_leader_data =  $this->User_model->getOne(array(
+                        'id' => $new_leader,
+                    ));
+
+                    // update record in user_kanban
+                    $this->User_kanban_model->update(array(
+                        'user_id' => $user_id,
+                        'kanban_id' => $kanban_id
+                    ), array(
+                        'is_deleted' => 1,
+                        'modified_date' => date("Y-m-d H:i:s")
+                    ));
+
+                    // create a notification
+                    $this->Notification_model->insert(array(
+                        'type' => 4, // become leader
+                        'created_by' => $user_id,
+                        'kanban_id' => $kanbanData['id'],
+                        'message' => 'User <b>'. $new_leader_data['name'] .'</b> become the Leader of Kanban: <b>' . $latest_kanban_info['name'] . '</b>. Transfer by: <b>' . $current_user_data['name'] . '</b>.',
+                        'created_date' => date("Y-m-d H:i:s"),
+                    ));
+
+                    // create a notification
+                    $this->Notification_model->insert(array(
+                        'type' => 10, // quit kanban
+                        'created_by' => $user_id,
+                        'kanban_id' => $kanban_id,
+                        'receiver' => $user_id,
+                        'message' => 'User <b>' . $current_user_data['name'] . '</b> has exited the kanban <b>' . $kanbanData['name'] . '</b>.',
+                        'created_date' => date("Y-m-d H:i:s"),
+                    ));
 
                 } else {
 
@@ -868,13 +1477,39 @@ class KanbanList_api extends MY_apicontroller {
                         'modified_date' => date("Y-m-d H:i:s"),
                     ));
 
+                    // update record in user_kanban
+                    $this->User_kanban_model->update(array(
+                        'user_id' => $user_id,
+                        'kanban_id' => $kanban_id
+                    ), array(
+                        'is_deleted' => 1,
+                        'modified_date' => date("Y-m-d H:i:s")
+                    ));
+
+                    // create a notification
+                    $this->Notification_model->insert(array(
+                        'type' => 10, // quit kanban
+                        'created_by' => $user_id,
+                        'kanban_id' => $kanban_id,
+                        'receiver' => $user_id,
+                        'message' => 'User <b>' . $current_user_data['name'] . '</b> has exited the kanban <b>' . $kanbanData['name'] . '</b>.',
+                        'created_date' => date("Y-m-d H:i:s"),
+                    ));
+
                 }
+
+                $this->db->trans_complete();
 
                 $this->json_output(array(
                     'id' => $ID,
                 ));
 			} else {
-				throw new Exception("Invalid Parameters");
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Invalid Parameters',
+                ]);
+                return;
 			}
 		} catch (Exception $e) {
 			$this->json_output_error($e->getMessage());
@@ -896,6 +1531,8 @@ class KanbanList_api extends MY_apicontroller {
 				$name = $this->input->post("new_kanban_name", true);
                 $owned_by = $this->input->post("leader", true);
 
+                $this->db->trans_start();
+
 				$sql = array(
 					'name' => $name,
                     'owned_by' => $owned_by,
@@ -907,11 +1544,25 @@ class KanbanList_api extends MY_apicontroller {
 
                 $ID = $this->{$this->data['main_model']}->insert($sql);
 
+                // insert new record in user_kanban
+                $this->User_kanban_model->insert(array(
+                    'user_id' => $owned_by,
+                    'kanban_id' => $ID,
+                    'created_date' => date("Y-m-d H:i:s")
+                ));
+
+                $this->db->trans_complete();
+
 				$this->json_output(array(
 					'id' => $ID,
 				));
 			} else {
-				throw new Exception("Invalid Parameters");
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Invalid Parameters',
+                ]);
+                return;
 			}
 		} catch (Exception $e) {
 			$this->json_output_error($e->getMessage());
@@ -935,15 +1586,21 @@ class KanbanList_api extends MY_apicontroller {
                 $ID = $this->input->post("id", true);
                 $user_id = $this->input->post("user_id", true);
 
-                // $adminID = $this->adminAuth($token);
 
                 $KanbanData = $this->{$this->data['main_model']}->getOne(array(
                     $this->data['primaryKey'] => $ID,
                 ));
 
                 if (empty($KanbanData)) {
-                    throw new Exception("kanban not exists");
+                    // Return JSON error response
+					echo json_encode([
+						'status' => 'ERROR',
+						'message' => 'Kanban Not Exist',
+					]);
+					return;
                 }
+
+                $this->db->trans_start();
 
                 $this->{$this->data['main_model']}->update(array(
                     $this->data['primaryKey'] => $ID,
@@ -951,6 +1608,32 @@ class KanbanList_api extends MY_apicontroller {
                     'is_deleted' => 1,
                     'modified_date' => date("Y-m-d H:i:s"),
                 ));
+
+                // update records in user_kanban
+                $current_records = $this->User_kanban_model->get_where(array(
+                    'kanban_id' => $ID,
+                    'is_deleted' => 0
+                ));
+
+                if (!empty($current_records)) {
+
+                    // extract user_ids from the records
+                    $kanban_users = array_column($current_records, 'user_id');
+
+                    // update records to is_deleted = 1
+                    foreach ($kanban_users as $user) {
+
+                        $this->User_kanban_model->update(array(
+                            'kanban_id' => $ID,
+                            'user_id' => $user
+                        ), array(
+                            'is_deleted' => 1,
+                            'modified_date' => date("Y-m-d H:i:s"),
+                        ));
+
+                    }                    
+
+                }
 
                 // create a notification
                 $this->Notification_model->insert(array(
@@ -962,12 +1645,18 @@ class KanbanList_api extends MY_apicontroller {
                     'created_date' => date("Y-m-d H:i:s"),
                 ));
 
+                $this->db->trans_complete();
                 
                 $this->json_output(array(
                     $this->data['primaryKey'] => $ID,
                 ));
             } else {
-                throw new Exception("Invalid param");
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Invalid Parameters',
+                ]);
+                return;
             }
         } catch (Exception $e) {
             $this->json_output_error($e->getMessage());

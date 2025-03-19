@@ -99,6 +99,7 @@
         </div> <!-- content -->
 
         <script>
+
             var app = angular.module("myApp",[]);
            
             app.controller("myCtrl", function($scope, $http, $timeout) {
@@ -118,10 +119,16 @@
                     $http.post("<?= base_url('api/login') ?>", tobeSubmit).then(function(response) {
                         loadinghide();
                         if (response.data.status == "OK") {
-                            // console.log(response);
+                            console.log(response);
                             // console.log("id", response.data.id.id);
                             $scope.id = response.data.id.id;
-                            location.href = '<?= base_url('profile') ?>/' + $scope.id;
+                            $scope.token = response.data.id.token;
+                            console.log("response", response);
+
+                            $scope.login_email = "";
+                            $scope.login_password = "";
+
+                            location.href = '<?= base_url('profile') ?>/' + $scope.id + "/" + $scope.token;
                         } else {
                             console.log("Error", response.data);
                             $scope.errorAlert = true;

@@ -98,7 +98,10 @@
                                                         <div>
                                                             <select class="form-select" ng-model="formDetail.created_by"
                                                                 name="todo_created_id" id="todo_created_id"
-                                                                data-toggle="select2" ng-options="user.id as user.name for user in userList" required>
+                                                                data-toggle="select2" required>
+                                                                <option ng-repeat="user in userList" value="{{user.id}}">  
+                                                                    {{user.name}}  
+                                                                </option> 
                                                             </select>
                                                         </div>
                                                     </div>
@@ -310,7 +313,8 @@
                     });  
                 }); 
                 
-
+                $scope.token = "<?= isset($token) && !empty($token) ? $token : '' ?>";
+				$scope.user_id = "<?= isset($user_id) && !empty($user_id) ? $user_id : '' ?>";
                 $scope.mode = '<?= isset($subTitle) ? $subTitle : '' ?>';
                 $scope.errorAlert = false;
                 $scope.error_msg = "";
@@ -484,10 +488,10 @@
                     tobeSubmit["mode"] = $scope.mode;
                     tobeSubmit["id"] = $scope.id;
 
-                    $http.post("<?= base_url('') ?>", tobeSubmit).then(function(response) {
+                    $http.post("<?= base_url('api/deleteKanbanDetailTodo') ?>", tobeSubmit).then(function(response) {
 
                         if (response.data.status == "OK") {
-                            location.href = '<?= base_url('admin_kanban_details_todo') ?>';
+                            location.href = "<?= base_url('admin_kanban_details_todo'); ?>/" + $scope.user_id + "/" + $scope.token;
                         } else {
                             alert(response.data.result);
                         }
@@ -521,7 +525,7 @@
                         loadinghide();
                         if (response.data.status == "OK") {
                             console.log(response);
-                            location.href = '<?= base_url('admin_kanban_details_todo') ?>';
+                            location.href = "<?= base_url('admin_kanban_details_todo'); ?>/" + user_id + "/" + token;
                         } else {
                             console.log("no ok", response.data);
                             alert(response.data.result);
@@ -537,7 +541,19 @@
                 }
 
                 $scope.backList = function() {
-                    location.href = '<?= base_url('admin_kanban_details_todo') ?>';
+                    $http.get("<?= base_url('admin_kanban_details_todo'); ?>/" + $scope.user_id + "/" + $scope.token)
+                    .then(function(response) {
+                        if (response.data.error) {
+                            alert(response.data.error); // Show alert for unauthorized access
+                            window.history.back(); // Go back to the previous page
+                        } else {
+                            window.location.href = "<?= base_url('admin_kanban_details_todo'); ?>/" + $scope.user_id + "/" + $scope.token;
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error("Error:", error);
+                        alert(error);
+                    });
                 }
 
                 $scope.searchUser = function() {

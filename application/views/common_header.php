@@ -54,7 +54,11 @@
 
     <style>
       .header-image {  
-        padding: 2%;  
+        display: flex;  
+        justify-content: space-between; /* Center horizontally */  
+        align-items: center; /* Center vertically */  
+        padding-left:2%;
+        padding-top: 0.3%;
         width: 100%;  
         height: 20vh; /* 20% of viewport height */  
         background-image: url('<?= base_url('assets/img/header_bg.png') ?>');  
@@ -66,6 +70,8 @@
         font-size: 35px;
         text-align: center;
         font-weight: bold;
+        flex-grow: 1; /* Push text to center */
+        margin-right: 5%;
       } 
       a {
         text-decoration: none;
@@ -78,19 +84,20 @@
   <body> 
     <div>
       <div class="header-image">
-        <p class="header-logo">Dopamin Boost Admin Portal</p>
+        <img src="<?= base_url('assets/img/Dopamin_Boost_logo.png') ?>" alt="Logo" style="max-width: 16%; margin-left: -1%; margin-top: -0.5%;" />
+        <div class="header-logo">Dopamin Boost Admin Portal</div>
       </div>
     
     </div>
 
-    <div style="display: flex; justify-content: space-around; width: 100%; font-size: 18px; font-weight: bold;">
-      <a href="<?= base_url('admin_userList'); ?>">User List</a>
+    <!-- <div style="display: flex; justify-content: space-around; width: 100%; font-size: 18px; font-weight: bold; border-bottom: 2px black solid;">
+      <a ng-href="<?= base_url('admin_userList'); ?>/{{user_id}}/{{token}}">User List</a>
       <a href="<?= base_url('admin_kanbanList'); ?>">Kanban List</a>
       <a href="<?= base_url('admin_kanban_details_todo'); ?>">Kanban Details Todo List</a>
       <a href="<?= base_url('admin_kanban_details_doing'); ?>">Kanban Details Doing List</a>
       <a href="<?= base_url('admin_kanban_details_done'); ?>">Kanban Details Done List</a>
       <a href="<?= base_url('admin_notificationList'); ?>">Notification List</a>
-    </div>
+    </div> -->
     
     
 

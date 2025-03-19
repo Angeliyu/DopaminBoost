@@ -17,6 +17,9 @@ class UserAuth_api extends CI_Controller
 
 		$this->data['primaryKey'] = $this->{$this->data['main_model']}->primaryKey;
 
+        //load notification model
+        $this->load->model("Notification_model");
+
     }
 
     public function login()
@@ -58,18 +61,35 @@ class UserAuth_api extends CI_Controller
                         ]);
                         return;
                     } else {
+
                         // Generate a random token  
                         $token = bin2hex(random_bytes(32));  // Generate a secure token
 
                         $sql['token'] = $token;
+                        $sql['modified_date'] = date("Y-m-d H:i:s");
 
                         $this->{$this->data['main_model']}->update(array(
                             'email' => $email,
                         ), $sql);
 
+                        $new_userDate = $this->{$this->data['main_model']}->getOne([
+                            'email' => $email,
+                            'is_deleted' => 0,
+                        ]);
+
+                        // create a notification
+                        $this->Notification_model->insert(array(
+                            'type' => 14, // login
+                            'created_by' => $userData['id'],
+                            'kanban_id' => null,
+                            'receiver' => $userData['id'],
+                            'message' => 'You logged in dopamin Boost.',
+                            'created_date' => date("Y-m-d H:i:s"),
+                        ));
+
                         echo json_encode([
                             'status' => 'OK',
-                            'id' => $userData,
+                            'id' => $new_userDate,
                         ]);
 
                     }
@@ -123,7 +143,21 @@ class UserAuth_api extends CI_Controller
                         'password' => $encrypted_password,
                         'safety_word_1' => $register_sq1,
                         'safety_word_2' => $register_sq2,
+                    ));
+
+                    $new_user_data = $this->{$this->data['main_model']}->getOne(array(
+                        'email' => $email,
                         'is_deleted' => 0,
+                    ));
+
+                    // create a notification
+                    $this->Notification_model->insert(array(
+                        'type' => 15, // register
+                        'created_by' => $new_user_data['id'],
+                        'kanban_id' => null,
+                        'receiver' => $new_user_data['id'],
+                        'message' => 'You registered an account in dopamin Boost.',
+                        'created_date' => date("Y-m-d H:i:s"),
                     ));
 
                     echo json_encode([
@@ -291,6 +325,16 @@ class UserAuth_api extends CI_Controller
                         'password' => $encrypted_password
                     ));
 
+                    // create a notification
+                    $this->Notification_model->insert(array(
+                        'type' => 12, // information updated
+                        'created_by' => $checkAvailable['id'],
+                        'kanban_id' => null,
+                        'receiver' => $checkAvailable['id'],
+                        'message' => 'You have reset your password.',
+                        'created_date' => date("Y-m-d H:i:s"),
+                    ));
+
                     echo json_encode([
                         'status' => 'OK',
                         'id' => $ID,
@@ -317,6 +361,70 @@ class UserAuth_api extends CI_Controller
         }
 
 	}
+
+    public function logout()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        header("Access-Control-Allow-Origin: *");
+        header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
+
+        try {
+            if (isset($_SERVER["CONTENT_TYPE"]) && strpos($_SERVER["CONTENT_TYPE"], "application/json") !== false) {
+                $_POST = array_merge($_POST, (array) json_decode(trim(file_get_contents('php://input')), true));
+
+                $user_id = $this->input->post("user_id", true);
+                $token = $this->input->post("token", true);
+
+                $userData = $this->{$this->data['main_model']}->getOne([
+                    'id' => $user_id,
+                    'token' => $token,
+                    'is_deleted' => 0,
+                ]);
+
+                if (empty($userData)) {
+
+                    // Return JSON error response
+                    echo json_encode([
+                        'status' => 'ERROR',
+                        'message' => 'Unauthorized User',
+                    ]);
+                    return;
+
+                } else {
+                    
+                    $this->{$this->data['main_model']}->update(array(
+                        'id' => $user_id,
+                    ), array(
+                        'token' => null
+                    ));
+
+                    // create a notification
+                    $this->Notification_model->insert(array(
+                        'type' => 13, // logout
+                        'created_by' => $user_id,
+                        'kanban_id' => null,
+                        'receiver' => $user_id,
+                        'message' => 'You logged out dopamin Boost.',
+                        'created_date' => date("Y-m-d H:i:s"),
+                    ));
+
+                    echo json_encode([
+                        'status' => 'OK',
+                        'id' => $userData,
+                    ]);
+
+                }
+
+            } else {
+                throw new Exception("Invalid Parameters");
+            }
+        } catch (Exception $e) {
+            echo json_encode([
+                'status' => 'ERROR',
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
 
 
 }

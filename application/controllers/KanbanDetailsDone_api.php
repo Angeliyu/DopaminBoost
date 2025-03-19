@@ -133,21 +133,24 @@ class KanbanDetailsDone_api extends MY_apicontroller {
 
         try {
 
-            // $adminID = $this->adminAuth($token);
-
-            $eachData = $this->{$this->data['main_model']}->getOne(array(
+            $taskData = $this->{$this->data['main_model']}->getOne(array(
                 $this->data['primaryKey'] => $ID,
                 'is_deleted' => 0,
             ));
 
-            if (empty($eachData)) {
-                throw new Exception("Data Not Found!");
+            if (empty($taskData)) {
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Details Not Exist',
+                ]);
+                return;
             }
 
-            $eachData[$this->data['primaryKey']] = (int)$eachData[$this->data['primaryKey']];
+            $taskData[$this->data['primaryKey']] = (int)$taskData[$this->data['primaryKey']];
 
             $this->json_output(array(
-                'kanban_done' => $eachData,
+                'kanban_done' => $taskData,
             ));
         } catch (Exception $e) {
 
@@ -171,7 +174,6 @@ class KanbanDetailsDone_api extends MY_apicontroller {
 				$mode = $this->input->post("mode", true);
 				$id = $this->input->post("id", true);
 
-				// $adminID = $this->adminAuth($token);
 				$kanban_id = $this->input->post("kanban_id", true);
                 $created_by = $this->input->post("created_by", true);
                 $type = $this->input->post("type", true);
@@ -195,7 +197,6 @@ class KanbanDetailsDone_api extends MY_apicontroller {
 				switch ($mode) {
 					case "Add":
 						
-						// $sql['created_user_id'] = $adminID;
                         $sql['status'] = 2;
 						$sql['created_date'] = date("Y-m-d H:i:s");
 
@@ -206,15 +207,19 @@ class KanbanDetailsDone_api extends MY_apicontroller {
 
 						$ID = $id;
 
-						$eachData = $this->{$this->data['main_model']}->getOne(array(
+						$taskData = $this->{$this->data['main_model']}->getOne(array(
 							'id' => $ID,
 						));
 
-						if (empty($eachData)) {
-							throw new Exception("Data No Exist");
+						if (empty($taskData)) {
+                            // Return JSON error response
+                            echo json_encode([
+                                'status' => 'ERROR',
+                                'message' => 'Details Not Exist',
+                            ]);
+                            return;
 						}
 
-						// $sql['last_modified_user_id'] = $adminID;
 						$sql['modified_date'] = date("Y-m-d H:i:s");
 
                         // if status is Go To Doing
@@ -264,7 +269,12 @@ class KanbanDetailsDone_api extends MY_apicontroller {
 					'id' => $ID,
 				));
 			} else {
-				throw new Exception("Invalid Parameters");
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Invalid Parameters',
+                ]);
+                return;
 			}
 		} catch (Exception $e) {
 			$this->json_output_error($e->getMessage());
@@ -284,18 +294,19 @@ class KanbanDetailsDone_api extends MY_apicontroller {
             if (isset($_SERVER["CONTENT_TYPE"]) && strpos($_SERVER["CONTENT_TYPE"], "application/json") !== false) {
                 $_POST = array_merge($_POST, (array) json_decode(trim(file_get_contents('php://input')), true));
 
-
                 $ID = $this->input->post("id", true);
 
-                // $adminID = $this->adminAuth($token);
-
-                $eachData = $this->{$this->data['main_model']}->getOne(array(
+                $taskData = $this->{$this->data['main_model']}->getOne(array(
                     $this->data['primaryKey'] => $ID,
                 ));
-                if (empty($eachData)) {
-                    throw new Exception("data not exists");
+                if (empty($taskData)) {
+                    // Return JSON error response
+                    echo json_encode([
+                        'status' => 'ERROR',
+                        'message' => 'Details Not Exist',
+                    ]);
+                    return;
                 }
-
 
                 $this->{$this->data['main_model']}->update(array(
                     $this->data['primaryKey'] => $ID,
@@ -309,7 +320,12 @@ class KanbanDetailsDone_api extends MY_apicontroller {
                     $this->data['primaryKey'] => $ID,
                 ));
             } else {
-                throw new Exception("Invalid param");
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Invalid Parameters',
+                ]);
+                return;
             }
         } catch (Exception $e) {
             $this->json_output_error($e->getMessage());

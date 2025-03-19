@@ -68,10 +68,10 @@ $route['reset_password/(:any)'] = 'frontend/reset_password/$1';
 
 
 //// profile
-$route['profile/(:any)'] = 'frontend/home/$1';
+$route['profile/(:any)/(:any)'] = 'frontend/home/$1/$2';
 
 //// kanban
-$route['kanban/(:any)'] = 'frontend/kanban/$1';
+$route['kanban/(:any)/(:any)/(:any)'] = 'frontend/kanban/$1/$2/$3';
 
 
 // frontend api
@@ -80,13 +80,15 @@ $route['api/login'] = 'userAuth_api/login';
 $route['api/register'] = 'userAuth_api/register';
 $route['api/forgot_password'] = 'userAuth_api/forgot_password_validation';
 $route['api/reset_password'] = 'userAuth_api/reset_password';
+$route['api/logout'] = 'userAuth_api/logout';
 
 //// profile api
 $route['api/edit_user_info'] = 'user_api/edit_from_frontend';
-$route['api/user_profile/(:any)'] = 'user_api/frontendDetail/$1';
+$route['api/user_profile/(:any)/(:any)'] = 'user_api/frontendDetail/$1/$2';
 $route['api/leader_kanban_notification/(:any)'] = 'notification_api/leaderNotification/$1';
 $route['api/joined_kanban_notification'] = 'notification_api/joinedMemberNotification';
 $route['api/general_notification/(:any)'] = 'notification_api/generalNotification/$1';
+$route['api/mark_as_read'] = 'notification_api/mark_as_read';
 $route['api/member_joined'] = 'kanbanList_api/memberJoin';
 $route['api/member_rejected'] = 'kanbanList_api/memberReject';
 
@@ -101,6 +103,10 @@ $route['api/inviteUser'] = 'user_api/inviteUser';
 $route['api/kanban_notification/(:any)'] = 'notification_api/kanbanNotification/$1';
 $route['api/createNewKanban'] = 'kanbanList_api/createNewKanban';
 $route['api/completeKanban'] = 'kanbanList_api/complete';
+$route['api/requestLeader'] = 'kanbanList_api/requestLeader';
+$route['api/acceptRequest'] = 'kanbanList_api/acceptRequest';
+$route['api/rejectRequest'] = 'kanbanList_api/rejectRequest';
+$route['api/checkAuthorization'] = 'kanbanList_api/checkAuthorization';
 
 //// kanban todo task api
 $route['api/editKanbanDetailsTodo'] = 'kanbanDetailsTodo_api/edit_from_frontend';
@@ -116,32 +122,32 @@ $route['api/deleteDoing'] = 'kanbanDetailsDoing_api/delete_with_notification';
 
 // backend_view
 //// user
-$route['admin_userList'] = 'backend/admin_userList';
-$route['admin_add_user'] = 'backend/add_user';
-$route['admin_edit_user/(:any)'] = 'backend/add_user/$1';
+$route['admin_userList/(:any)/(:any)'] = 'backend/admin_userList/$1/$2';
+$route['admin_add_user/(:any)/(:any)'] = 'backend/add_user/$1/$2';
+$route['admin_edit_user/(:any)/(:any)/(:any)'] = 'backend/add_user/$1/$2/$3';
 
 //// kanban
-$route['admin_kanbanList'] = 'backend/admin_kanbanList';
-$route['admin_add_kanban'] = 'backend/add_kanban';
-$route['admin_edit_kanban/(:any)'] = 'backend/add_kanban/$1';
+$route['admin_kanbanList/(:any)/(:any)'] = 'backend/admin_kanbanList/$1/$2';
+$route['admin_add_kanban/(:any)/(:any)'] = 'backend/add_kanban/$1/$2';
+$route['admin_edit_kanban/(:any)/(:any)/(:any)'] = 'backend/add_kanban/$1/$2/$3';
 
 //// kanban details todo
-$route['admin_kanban_details_todo'] = 'backend/admin_kanban_details_todo';
-$route['admin_add_kanban_details_todo'] = 'backend/add_kanban_details_todo';
-$route['admin_edit_kanban_details_todo/(:any)'] = 'backend/add_kanban_details_todo/$1';
+$route['admin_kanban_details_todo/(:any)/(:any)'] = 'backend/admin_kanban_details_todo/$1/$2';
+$route['admin_add_kanban_details_todo/(:any)/(:any)'] = 'backend/add_kanban_details_todo/$1/$2';
+$route['admin_edit_kanban_details_todo/(:any)/(:any)/(:any)'] = 'backend/add_kanban_details_todo/$1/$2/$3';
 
 //// kanban details doing
-$route['admin_kanban_details_doing'] = 'backend/admin_kanban_details_doing';
-$route['admin_add_kanban_details_doing'] = 'backend/add_kanban_details_doing';
-$route['admin_edit_kanban_details_doing/(:any)'] = 'backend/add_kanban_details_doing/$1';
+$route['admin_kanban_details_doing/(:any)/(:any)'] = 'backend/admin_kanban_details_doing/$1/$2';
+$route['admin_add_kanban_details_doing/(:any)/(:any)'] = 'backend/add_kanban_details_doing/$1/$2';
+$route['admin_edit_kanban_details_doing/(:any)/(:any)/(:any)'] = 'backend/add_kanban_details_doing/$1/$2/$3';
 
 //// kanban details done
-$route['admin_kanban_details_done'] = 'backend/admin_kanban_details_done';
-$route['admin_add_kanban_details_done'] = 'backend/add_kanban_details_done';
-$route['admin_edit_kanban_details_done/(:any)'] = 'backend/add_kanban_details_done/$1';
+$route['admin_kanban_details_done/(:any)/(:any)'] = 'backend/admin_kanban_details_done/$1/$2';
+$route['admin_add_kanban_details_done/(:any)/(:any)'] = 'backend/add_kanban_details_done/$1/$2';
+$route['admin_edit_kanban_details_done/(:any)/(:any)/(:any)'] = 'backend/add_kanban_details_done/$1/$2/$3';
 
 //// notification
-$route['admin_notificationList'] = 'backend/admin_notificationList';
+$route['admin_notificationList/(:any)/(:any)'] = 'backend/admin_notificationList/$1/$2';
 
 // backend api
 //// backend_api user

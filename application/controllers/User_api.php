@@ -15,6 +15,9 @@ class User_api extends MY_apicontroller {
 
 		$this->data['primaryKey'] = $this->{$this->data['main_model']}->primaryKey;
 
+		//load notification model
+        $this->load->model("Notification_model");
+
     }
 
     public function getUserList(){
@@ -134,7 +137,6 @@ class User_api extends MY_apicontroller {
 				$mode = $this->input->post("mode", true);
 				$id = $this->input->post("id", true);
 
-				// $adminID = $this->adminAuth($token);
 				$name = $this->input->post("name", true);
                 $email = $this->input->post("email", true);
 				$role = $this->input->post("role", true);
@@ -150,7 +152,6 @@ class User_api extends MY_apicontroller {
 				switch ($mode) {
 					case "Add":
 						
-						// $sql['created_user_id'] = $adminID;
 						$sql['created_date'] = date("Y-m-d H:i:s");
 
 						$ID = $this->{$this->data['main_model']}->insert($sql);
@@ -160,15 +161,20 @@ class User_api extends MY_apicontroller {
 
 						$ID = $id;
 
-						$eachData = $this->{$this->data['main_model']}->getOne(array(
+						$userData = $this->{$this->data['main_model']}->getOne(array(
 							'id' => $ID,
 						));
 
-						if (empty($eachData)) {
-							throw new Exception("Data No Exist");
+						if (empty($userData)) {
+
+							// Return JSON error response
+							echo json_encode([
+								'status' => 'ERROR',
+								'message' => 'User No Exist',
+							]);
+							return;
 						}
 
-						// $sql['last_modified_user_id'] = $adminID;
 						$sql['modified_date'] = date("Y-m-d H:i:s");
 
 						$this->{$this->data['main_model']}->update(array(
@@ -182,7 +188,12 @@ class User_api extends MY_apicontroller {
 					'id' => $ID,
 				));
 			} else {
-				throw new Exception("Invalid Parameters");
+				// Return JSON error response
+				echo json_encode([
+					'status' => 'ERROR',
+					'message' => 'Invalid Parameters',
+				]);
+				return;
 			}
 		} catch (Exception $e) {
 			$this->json_output_error($e->getMessage());
@@ -205,13 +216,17 @@ class User_api extends MY_apicontroller {
 
                 $ID = $this->input->post("id", true);
 
-                // $adminID = $this->adminAuth($token);
-
-                $eachData = $this->{$this->data['main_model']}->getOne(array(
+                $userData = $this->{$this->data['main_model']}->getOne(array(
                     $this->data['primaryKey'] => $ID,
                 ));
-                if (empty($eachData)) {
-                    throw new Exception("data not exists");
+                if (empty($userData)) {
+
+					// Return JSON error response
+                    echo json_encode([
+                        'status' => 'ERROR',
+                        'message' => 'User not exists',
+                    ]);
+                    return;
                 }
 
 
@@ -227,7 +242,12 @@ class User_api extends MY_apicontroller {
                     $this->data['primaryKey'] => $ID,
                 ));
             } else {
-                throw new Exception("Invalid param");
+				// Return JSON error response
+				echo json_encode([
+					'status' => 'ERROR',
+					'message' => 'Invalid parameters',
+				]);
+				return;
             }
         } catch (Exception $e) {
             $this->json_output_error($e->getMessage());
@@ -239,22 +259,26 @@ class User_api extends MY_apicontroller {
 
 		try {
 
-			// $adminID = $this->adminAuth($token);
-
-			$eachData = $this->{$this->data['main_model']}->getOne(array(
+			$userData = $this->{$this->data['main_model']}->getOne(array(
 				'id' => $ID,
 				'is_deleted' => 0,
 			));
 
-			if (empty($eachData)) {
-				throw new Exception("Data Not Found");
+			if (empty($userData)) {
+				// Return JSON error response
+				echo json_encode([
+					'status' => 'ERROR',
+					'message' => 'User Not Exist',
+				]);
+				return;
 			}
 
-			$eachData['id'] = (int) $eachData['id'];
+			$userData['id'] = (int) $userData['id'];
 
 			$this->json_output(array(
-				'userDetail' => $eachData,
+				'userDetail' => $userData,
 			));
+
 		} catch (Exception $e) {
 
 			$this->json_output_error($e->getMessage());
@@ -269,53 +293,48 @@ class User_api extends MY_apicontroller {
 
 
 		try {
-			$type = $this->input->get("type");
-			if (!empty($type) && $type == "easyAutocomplete") {
-				$searchWord = $this->input->get("keyword", true);
-				$searchWord = urldecode($searchWord);
-				$searchWord = trim($searchWord);
-				$query = "`is_deleted` = 0 AND (`code` LIKE '%" . $searchWord . "%' OR `name` LIKE '%" . $searchWord . "%' OR `ssm` LIKE '%" . $searchWord . "%') ";
+			if (isset($_SERVER["CONTENT_TYPE"]) && strpos($_SERVER["CONTENT_TYPE"], "application/json") !== false) {
+				$_POST = array_merge($_POST, (array) json_decode(trim(file_get_contents('php://input')), true));
+				$onwed_by = $this->input->post("onwed_by", true);
 
-				$dataList = [];
-				if (!empty($searchWord)) {
-					$dataList = $this->User_model->fetch(50, 0, $query, [], [], "id,name,email");
-				}
+				if ($onwed_by != 0) {
 
-				echo json_encode($dataList);
-			} else {
-				if (isset($_SERVER["CONTENT_TYPE"]) && strpos($_SERVER["CONTENT_TYPE"], "application/json") !== false) {
-					$_POST = array_merge($_POST, (array) json_decode(trim(file_get_contents('php://input')), true));
-					$onwed_by = $this->input->post("onwed_by", true);
-
-					if ($onwed_by != 0) {
-
-						$userData = $this->User_model->getOne(
-							array(
-								"is_deleted" => 0,
-								"id" => $onwed_by,
-							)
-						);
-
-						if (empty($userData)) {
-							throw new Exception("User Not Found");
-						}
-
-					} else {
-
-						$userData = [
-							'id' => 0,
-							'name' => 'Not Assigned'
-						];
-					}
-
-					$this->json_output(
+					$userData = $this->User_model->getOne(
 						array(
-							'userData' => $userData,
+							"is_deleted" => 0,
+							"id" => $onwed_by,
 						)
 					);
+
+					if (empty($userData)) {
+						// Return JSON error response
+						echo json_encode([
+							'status' => 'ERROR',
+							'message' => 'User Not Found',
+						]);
+						return;
+					}
+
 				} else {
-					throw new Exception("Invalid Parameters");
+
+					$userData = [
+						'id' => 0,
+						'name' => 'Not Assigned'
+					];
 				}
+
+				$this->json_output(
+					array(
+						'userData' => $userData,
+					)
+				);
+			} else {
+				// Return JSON error response
+				echo json_encode([
+					'status' => 'ERROR',
+					'message' => 'Invalid Parameters',
+				]);
+				return;
 			}
 		} catch (Exception $e) {
 			$this->json_output_error($e->getMessage());
@@ -330,62 +349,50 @@ class User_api extends MY_apicontroller {
 
 
 		try {
-			$type = $this->input->get("type");
-			if (!empty($type) && $type == "easyAutocomplete") {
-				$searchWord = $this->input->get("keyword", true);
-				$searchWord = urldecode($searchWord);
-				$searchWord = trim($searchWord);
-				$query = "`is_deleted` = 0 AND (`code` LIKE '%" . $searchWord . "%' OR `name` LIKE '%" . $searchWord . "%' OR `ssm` LIKE '%" . $searchWord . "%') ";
+			if (isset($_SERVER["CONTENT_TYPE"]) && strpos($_SERVER["CONTENT_TYPE"], "application/json") !== false) {
+				$_POST = array_merge($_POST, (array) json_decode(trim(file_get_contents('php://input')), true));
+				$member = $this->input->post("member", true);
 
-				$dataList = [];
-				if (!empty($searchWord)) {
-					$dataList = $this->User_model->fetch(50, 0, $query, [], [], "id,name,email");
-				}
+				if ($member != 0) {	
 
-				echo json_encode($dataList);
-			} else {
-				if (isset($_SERVER["CONTENT_TYPE"]) && strpos($_SERVER["CONTENT_TYPE"], "application/json") !== false) {
-					$_POST = array_merge($_POST, (array) json_decode(trim(file_get_contents('php://input')), true));
-					$member = $this->input->post("member", true);
+					$userData = [];
 
-					if ($member != 0) {	
-
-						$userData = [];
-
-						foreach ($member as $id) {  
-							$user = $this->User_model->getOne(array("is_deleted" => 0, "id" => $id));  
-							if (!empty($user)) {  
-								$userData[] = $user; // Collect user data  
-							}  
+					foreach ($member as $id) {  
+						$user = $this->User_model->getOne(array("is_deleted" => 0, "id" => $id));  
+						if (!empty($user)) {  
+							$userData[] = $user; // Collect user data  
 						}  
+					}  
 
-						// $userData = $this->User_model->getOne(
-						// 	array(
-						// 		"is_deleted" => 0,
-						// 		"id" => $member,
-						// 	)
-						// );
-
-						if (empty($userData)) {
-							throw new Exception("User Not Found");
-						}
-
-					} else {
-
-						$userData = [
-							'id' => 0,
-							'name' => 'Not Assigned'
-						];
+					if (empty($userData)) {
+						// Return JSON error response
+						echo json_encode([
+							'status' => 'ERROR',
+							'message' => 'User Not Found',
+						]);
+						return;
 					}
 
-					$this->json_output(
-						array(
-							'userData' => $userData,
-						)
-					);
 				} else {
-					throw new Exception("Invalid Parameters");
+
+					$userData = [
+						'id' => 0,
+						'name' => 'Not Assigned'
+					];
 				}
+
+				$this->json_output(
+					array(
+						'userData' => $userData,
+					)
+				);
+			} else {
+				// Return JSON error response
+				echo json_encode([
+					'status' => 'ERROR',
+					'message' => 'Invalid Parameter',
+				]);
+				return;
 			}
 		} catch (Exception $e) {
 			$this->json_output_error($e->getMessage());
@@ -409,7 +416,6 @@ class User_api extends MY_apicontroller {
 				$mode = $this->input->post("mode", true);
 				$id = $this->input->post("id", true);
 
-				// $adminID = $this->adminAuth($token);
 				$name = $this->input->post("name", true);
                 $email = $this->input->post("email", true);
 				
@@ -425,12 +431,17 @@ class User_api extends MY_apicontroller {
 
 						$ID = $id;
 
-						$eachData = $this->{$this->data['main_model']}->getOne(array(
+						$userData = $this->{$this->data['main_model']}->getOne(array(
 							'id' => $ID,
 						));
 
-						if (empty($eachData)) {
-							throw new Exception("Data No Exist");
+						if (empty($userData)) {
+							// Return JSON error response
+							echo json_encode([
+								'status' => 'ERROR',
+								'message' => 'User No Exist',
+							]);
+							return;
 						}
 
 						// $sql['last_modified_user_id'] = $adminID;
@@ -439,6 +450,16 @@ class User_api extends MY_apicontroller {
 						$this->{$this->data['main_model']}->update(array(
 							'id' => $id,
 						), $sql);
+
+						// create a notification
+                        $this->Notification_model->insert(array(
+                            'type' => 12, // information updated
+                            'created_by' => $id,
+                            'kanban_id' => null,
+							'receiver' => $id,
+                            'message' => 'You have updated your information.',
+                            'created_date' => date("Y-m-d H:i:s"),
+                        ));
 						
 						break;
 				}
@@ -447,19 +468,22 @@ class User_api extends MY_apicontroller {
 					'id' => $ID,
 				));
 			} else {
-				throw new Exception("Invalid Parameters");
+				// Return JSON error response
+				echo json_encode([
+					'status' => 'ERROR',
+					'message' => 'Invalid Parameters',
+				]);
+				return;
 			}
 		} catch (Exception $e) {
 			$this->json_output_error($e->getMessage());
 		}
 	}
 
-	public function frontendDetail($ID)
+	public function frontendDetail($ID, $token)
 	{
 
 		try {
-
-			// $adminID = $this->adminAuth($token);
 
 			//load kanban_list model
 			$this->load->model("Kanban_list_model");
@@ -467,8 +491,20 @@ class User_api extends MY_apicontroller {
 			//load notification model
 			$this->load->model("Notification_model");
 
+			if ($token == null || $token == "") {
+
+				// Return JSON error response
+				echo json_encode([
+					'status' => 'ERROR',
+					'message' => 'Unauthorized User!',
+				]);
+				return;
+				
+			}
+
 			$userData = $this->{$this->data['main_model']}->getOne(array(
 				'id' => $ID,
+				'token' => $token,
 				'is_deleted' => 0,
 			));
 
@@ -485,7 +521,12 @@ class User_api extends MY_apicontroller {
 			$kanbanLists = $this->Kanban_list_model->fetch2("id,name,member,owned_by");  
 
 			if (empty($userData)) {
-				throw new Exception("Data Not Found");
+				// Return JSON error response
+				echo json_encode([
+					'status' => 'ERROR',
+					'message' => 'Unauthorized User!',
+				]);
+				return;
 			}
 
 			// If there is an ownKanban, add the user's name to it  
@@ -505,7 +546,7 @@ class User_api extends MY_apicontroller {
 			// Create a mapping of user IDs to names  
 			$userMap = [];  
 			foreach ($allUser as $user) {  
-				$userMap[$user['id']] = $user['name']; // Assuming 'id' is the user ID and 'name' is the user name  
+				$userMap[$user['id']] = $user['name']; // 'id' is the user ID and 'name' is the user name  
 			}  
 
 			// Update userKanbans with the owned_by name   
@@ -573,7 +614,12 @@ class User_api extends MY_apicontroller {
 				));
 
 				if (empty($kanban_data)) {
-					throw new Exception("Kanban does not exist.");
+					// Return JSON error response
+					echo json_encode([
+						'status' => 'ERROR',
+						'message' => 'Kanban Not Exist',
+					]);
+					return;
 				}
 
 				// get all user of current kanban
@@ -604,7 +650,12 @@ class User_api extends MY_apicontroller {
                     'available_user' => $available_users,
                 ));
 			} else {
-				throw new Exception("Invalid Parameters");
+				// Return JSON error response
+				echo json_encode([
+					'status' => 'ERROR',
+					'message' => 'Invalid Parameters',
+				]);
+				return;
 			}
 		} catch (Exception $e) {
 			$this->json_output_error($e->getMessage());
@@ -653,7 +704,12 @@ class User_api extends MY_apicontroller {
 				$ID = null;
 
 				if (empty($user_data)) {
-					throw new Exception("User does not exist.");
+					// Return JSON error response
+					echo json_encode([
+						'status' => 'ERROR',
+						'message' => 'User Not Exist',
+					]);
+					return;
 				}
 
 				// insert notification for invited user
@@ -662,7 +718,7 @@ class User_api extends MY_apicontroller {
 					'created_by' => $current_user_id,
 					'receiver' => $user_id,
 					'kanban_id' => $kanban_id,
-					'message' => "You are invited by " . $leader_data['name'] . " to join Kanban " . $kanban_data['name'],
+					'message' => "User <b>" . $user_data['name'] . "</b> invited by <b>" . $leader_data['name'] . "</b> to join Kanban <b>" . $kanban_data['name'] . "</b>.",
 					'created_date' => date("Y-m-d H:i:s"),
 				));
 
@@ -672,7 +728,12 @@ class User_api extends MY_apicontroller {
                     'id' => $ID,
                 ));
 			} else {
-				throw new Exception("Invalid Parameters");
+				// Return JSON error response
+				echo json_encode([
+					'status' => 'ERROR',
+					'message' => 'Invalid Parameters',
+				]);
+				return;
 			}
 		} catch (Exception $e) {
 			$this->json_output_error($e->getMessage());

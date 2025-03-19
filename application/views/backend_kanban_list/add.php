@@ -67,28 +67,6 @@
                                                         </div>
                                                     </div>
 
-                                                    <!-- <div class="mb-2 row">
-                                                        <label for="user_id"
-                                                            class="form-label">Owned By</label>
-                                                        <div class="">
-                                                            <select class="form-select" ng-model="formDetail.owned_by"
-                                                                name="user_id" id="user_id"
-                                                                data-toggle="select2" >
-                                                                <?php
-                                                                if (!empty($userList)) {
-                                                                    foreach ($userList as $v) {
-                                                                ?>
-                                                                        <option value="<?= $v['id'] ?>">
-                                                                            <?= $v['name'] ?>
-                                                                        </option>
-                                                                <?php
-                                                                    }
-                                                                }
-                                                                ?>
-                                                            </select>
-                                                        </div>
-                                                    </div> -->
-
                                                     <div class="mb-2 row">  
                                                         <label for="user_id" class="form-label">Owned By</label>  
                                                         <div class="">  
@@ -192,7 +170,8 @@
                     
                 }); 
                 
-
+                $scope.token = "<?= isset($token) && !empty($token) ? $token : '' ?>";
+				$scope.user_id = "<?= isset($user_id) && !empty($user_id) ? $user_id : '' ?>";
                 $scope.mode = '<?= isset($subTitle) ? $subTitle : '' ?>';
                 $scope.errorAlert = false;
                 $scope.error_msg = "";
@@ -226,10 +205,10 @@
                     tobeSubmit["mode"] = $scope.mode;
                     tobeSubmit["id"] = $scope.id;
 
-                    $http.post("<?= base_url('') ?>", tobeSubmit).then(function(response) {
+                    $http.post("<?= base_url('api/deleteKanban') ?>", tobeSubmit).then(function(response) {
 
                         if (response.data.status == "OK") {
-                            location.href = '<?= base_url('admin_kanbanList') ?>';
+                            location.href = "<?= base_url('admin_kanbanList'); ?>/" + $scope.user_id + "/" + $scope.token;
                         } else {
                             alert(response.data.result);
                         }
@@ -255,7 +234,7 @@
                         loadinghide();
                         if (response.data.status == "OK") {
                             console.log(response);
-                            location.href = '<?= base_url('admin_kanbanList') ?>';
+                            location.href = "<?= base_url('admin_kanbanList'); ?>/" + user_id + "/" + token;
                         } else {
                             console.log("no ok", response.data);
                             alert(response.data.result);
@@ -271,14 +250,27 @@
                 }
 
                 $scope.backList = function() {
-                    location.href = '<?= base_url('admin_kanbanList') ?>';
+                    $http.get("<?= base_url('admin_kanbanList'); ?>/" + $scope.user_id + "/" + $scope.token)
+                    .then(function(response) {
+                        if (response.data.error) {
+                            alert(response.data.error); // Show alert for unauthorized access
+                            window.history.back(); // Go back to the previous page
+                        } else {
+                            window.location.href = "<?= base_url('admin_kanbanList'); ?>/" + $scope.user_id + "/" + $scope.token;
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error("Error:", error);
+                        alert(error);
+                    });
                 }
 
                 // Function to fetch available users  
                 $scope.fetchAvailableUsers = function() {  
                     $http.get("<?= base_url('api/getAvailableUser') ?>").then(function(response) {  
                         if (response.data.status == "OK") {  
-                            $scope.userList = response.data.result; // Store available users  
+                            $scope.userList = response.data.result; // Store available users 
+                            console.log('available user', $scope.userList);
                         } else {  
                             console.log(response.data.result);  
                         }  

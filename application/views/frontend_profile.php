@@ -18,11 +18,14 @@
                     <br/>
                     <table style="margin-top: 0px; width: 100%;">
                         <thead>
+                            <tr style="width: 100%; font-size: 18px;" ng-if="logout_status">
+                                <td style="width: 10%; text-align: center;"> <a class="btn btn-warning btn-lg" ng-href="<?= base_url('') ?>">LOGIN</a></td>
+                            </tr>
                         </thead>
                         <tbody style="border-bottom: 2px black solid;">
-                        <tr style="width: 100%; font-size: 18px;">
+                        <tr style="width: 100%; font-size: 18px;" ng-if="!logout_status">
                             <td style="width: 10%; text-align: left;"><h2 class="page-title" style="font-weight: bold;"> Profile </h2></td>
-                            <td style="width: 80%; text-align: right;" ng-if="formDetail.role == 1"><a href="<?= base_url('admin_userList'); ?>" style="color: black; text-decoration: underline;">Admin Backend System</a></td>
+                            <td style="width: 80%; text-align: right;" ng-if="formDetail.role == 1"><a href="#" ng-click="check_backend_access(id, token)" style="color: black; text-decoration: underline;">Admin Backend System</a></td>
                         </tr>
                         </tbody>
                     </table>
@@ -34,15 +37,14 @@
                 <div class="col-12">
 
                     <!-- User Information -->
-                    <div class="card">
+                    <div class="card" ng-if="!logout_status">
                         <div class="card-body">
 
                             <div class="row">
                                 <div class="col-12">
                                     <div class="p-2">
 
-                                        <form class="form-horizontal angularFormValidationHelper" role="form"
-                                            name="myForm">
+                                        <form class="form-horizontal angularFormValidationHelper" role="form" name="myForm">
                                             <fieldset>
 
                                                 <h3><u>User Information</u></h3><br/>
@@ -71,7 +73,7 @@
                                                         <button class="btn btn-info mb-2 w-100" style="color: white; font-weight: bold;" ng-click="passwordValidationData(formDetail.email)">
                                                             Change Password
                                                         </button>
-                                                        <button class="btn btn-danger w-100" style="font-weight: bold;" ng-click="backList()">
+                                                        <button class="btn btn-danger w-100" style="font-weight: bold;" ng-click="logout()">
                                                             Logout
                                                         </button>
                                                     </div>
@@ -89,7 +91,7 @@
                     </div><!-- end col -->
 
                     <!-- General Notification -->
-                    <div class="col-md-12" style="margin-top: 5%;">  
+                    <div class="col-md-12" style="margin-top: 5%;" ng-if="!logout_status">  
                         <div class="card">  
                             <div class="card-body">  
                                 <div class="row"> <!-- Use a row for layout -->  
@@ -118,10 +120,12 @@
                                                                 Reject
                                                             </button>
                                                         </td>
-                                                        <td class="align-middle" ng-if="notification.type == 1 && notification.is_accepted == 1">
+                                                        <td class="align-middle" ng-if="notification.type == 1 && (notification.is_accepted == 1 || notification.is_accepted == 2)">
                                                         </td>
-                                                        <td class="align-middle" ng-if="notification.type != 1">
-                                                            <button class="btn btn-info me-2" style="color: white; font-weight: bold;" ng-click="">
+                                                        <td class="align-middle" ng-if="notification.type != 1 && notification.is_read == 1">
+                                                        </td>
+                                                        <td class="align-middle" ng-if="notification.type != 1 && notification.is_read == 0">
+                                                            <button class="btn btn-info me-2" style="color: white; font-weight: bold;" ng-click="mark_as_read(notification.id)">
                                                                 Mark As Read
                                                             </button>
                                                         </td>  
@@ -129,6 +133,7 @@
                                                             <p ng-if="notification.is_read == 1"><span class="badge bg-info">Read</span></p>
                                                             <p ng-if="notification.is_read == 0"><span class="badge bg-warning">Unread</span></p>
                                                             <p ng-if="notification.is_accepted == 1"><span class="badge bg-success">Accepted</span></p>
+                                                            <p ng-if="notification.is_accepted == 2"><span class="badge bg-danger">Rejected</span></p>
                                                         </td>
                                                     </tr>  
                                                     <tr ng-show='false'>  
@@ -147,14 +152,14 @@
                         </div>  
                     </div>
 
-                    <div style="margin-top: 5%; margin-bottom: -5%;" ng-if="formDetail.ownKanban == null">
+                    <div style="margin-top: 5%; margin-bottom: -5%;" ng-if="formDetail.ownKanban == null && !logout_status">
                         <button class="btn btn-success mb-2 w-100" style="font-weight: bold;" ng-click="openAddNewKanban()" >
                             Create New Kanban
                         </button>
                     </div>
 
                     <!-- Leader Kanban -->
-                    <div class="col-md-12" style="margin-top: 5%;">  
+                    <div class="col-md-12" style="margin-top: 5%;" ng-if="!logout_status">  
                         <div class="card">  
                             <div class="card-body">  
                                 <div class="row"> <!-- Use a row for layout -->  
@@ -170,7 +175,7 @@
                                                 </thead>  
                                                 <tbody>  
                                                     <tr>  
-                                                        <td class="align-middle"><a ng-href="<?= base_url('kanban/') ?>{{ownKanbanId}}?userId={{id}}">{{formDetail.ownKanban.name}}</a></td>
+                                                        <td class="align-middle"><a ng-href="<?= base_url('kanban/') ?>{{ ownKanbanId }}/{{ id }}/{{ token }}">{{formDetail.ownKanban.name}}</a></td>
                                                         <td class="align-middle">{{formDetail.ownKanban.owned_by_name}}</td>
                                                     </tr>  
                                                     <tr ng-show="productPriceLog.length == 0">  
@@ -217,7 +222,7 @@
                     </div>
 
                     <!-- Joined Kanban Table -->
-                    <div class="col-md-12" style="margin-top: 5%; margin-bottom: 5%;">  
+                    <div class="col-md-12" style="margin-top: 5%; margin-bottom: 5%;" ng-if="!logout_status">  
                         <div class="card">  
                             <div class="card-body">  
                                 <div class="row"> <!-- Use a row for layout -->  
@@ -233,7 +238,7 @@
                                                 </thead>  
                                                 <tbody ng-if="formDetail.userKanbans.length > 0">  
                                                     <tr ng-repeat="kanban in formDetail.userKanbans">  
-                                                        <td class="align-middle"><a ng-href="<?= base_url('kanban/') ?>{{ kanban.id }}?userId={{ id }}">{{ kanban.name }}</a></td>  
+                                                        <td class="align-middle"><a ng-href="<?= base_url('kanban/') ?>{{ kanban.id }}/{{id}}/{{token}}">{{ kanban.name }}</a></td>  
                                                         <td class="align-middle">{{ kanban.owned_by_name }}</td>  
                                                     </tr> 
                                                 </tbody>  
@@ -381,7 +386,6 @@
                                 <input type="text" class="form-control" id="profile_edit_password_retype" ng-model="passwordEdit.retype_password" required>  
                             </div>  
                             
-
                             <input type="hidden" ng-model="formDetail.email"> <!-- Hidden input for user email -->  
                         </form>  
                     </div>  
@@ -395,7 +399,7 @@
 
         <!-- Notification Modal (general notification)-->
         <div class="modal fade" id="profileGeneralNotificationModal" tabindex="-1" aria-labelledby="profileGeneralNotificationModal" aria-hidden="true">
-            <div class="modal-dialog">
+            <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="profileGeneralNotificationModal">Notification</h5>
@@ -414,20 +418,22 @@
                                 </thead>  
                                 <tbody>  
                                     <tr ng-repeat="notification in general_notification | orderBy:'-created_date'">  
-                                        <td class="align-middle">{{ notification.message }}</td>  
+                                        <td class="align-middle" ng-bind-html="notification.message"></td>  
                                         <td class="align-middle">{{ notification.created_date }}</td>
                                         <td class="align-middle" ng-if="notification.type == 1 && notification.is_accepted == 0">
                                             <button class="btn btn-success me-2" style="color: white; font-weight: bold;" ng-click="joinKanban(id, notification.kanban_id, notification.id)">
                                                 Accept
                                             </button>
-                                            <button class="btn btn-danger me-2" style="font-weight: bold;" ng-click="" >
+                                            <button class="btn btn-danger me-2" style="font-weight: bold;" ng-click="rejectKanban(id, notification.kanban_id, notification.id)" >
                                                 Reject
                                             </button>
                                         </td>
-                                        <td class="align-middle" ng-if="notification.type == 1 && notification.is_accepted == 1">
+                                        <td class="align-middle" ng-if="notification.type == 1 && (notification.is_accepted == 1 || notification.is_accepted == 2)">
                                         </td>
-                                        <td class="align-middle" ng-if="notification.type != 1">
-                                            <button class="btn btn-info me-2" style="color: white; font-weight: bold;" ng-click="">
+                                        <td class="align-middle" ng-if="notification.type != 1 && notification.is_read == 1">
+                                        </td>
+                                        <td class="align-middle" ng-if="notification.type != 1 && notification.is_read == 0">
+                                            <button class="btn btn-info me-2" style="color: white; font-weight: bold;" ng-click="mark_as_read(notification.id)">
                                                 Mark As Read
                                             </button>
                                         </td>  
@@ -435,6 +441,7 @@
                                             <p ng-if="notification.is_read == 1"><span class="badge bg-info">Read</span></p>
                                             <p ng-if="notification.is_read == 0"><span class="badge bg-warning">Unread</span></p>
                                             <p ng-if="notification.is_accepted == 1"><span class="badge bg-success">Accepted</span></p>
+                                            <p ng-if="notification.is_accepted == 2"><span class="badge bg-danger">Rejected</span></p>
                                         </td>
                                     </tr>  
                                     <tr ng-show='false'>  
@@ -528,7 +535,7 @@
             </div>
         </div>
 
-        <!-- Add New InfKanbanormation Modal -->  
+        <!-- Add New Kanban Modal -->  
         <div class="modal fade" id="addKanbanModal" tabindex="-1" role="dialog" aria-labelledby="addKanbanModal" aria-hidden="true">  
             <div class="modal-dialog" role="document">  
                 <div class="modal-content">  
@@ -560,7 +567,58 @@
                 $scope.errorAlert = false;
                 $scope.error_msg = "";
                 $scope.id = "<?= isset($id) && !empty($id) ? $id : '' ?>";
+                $scope.token = "<?= isset($token) && !empty($token) ? $token : '' ?>";
                 $scope.ownKanbanId = null;
+
+                console.log("token", $scope.token);
+
+                if($scope.logout_status == true) {
+                    window.location.href = '<?= base_url('') ?>';
+                }
+
+                $scope.mark_as_read = function(id) {
+
+                    const data = {  
+                        notification_id: id,  
+                    };
+
+                    console.log("data", data);
+                            
+                    // Make the API call  
+                    $http.post("<?= base_url('api/mark_as_read') ?>", data).then(function(response) {  
+                        if (response.data.status == "OK") {
+                            // Handle success  
+                            console.log('Update notification successfully:', response.data); 
+                            
+                            location.href = "<?= base_url('profile'); ?>/" + $scope.id + "/" + $scope.token;
+                        } else {
+                            $scope.errorAlert = true;
+                            $scope.error_msg = response.data.result;
+                            console.log("error", response);
+                            alert(response.data.message); 
+                        }
+                    })  
+                    .catch(function(error) {  
+                        // Handle error  
+                        console.error('Error update notification:', error);  
+                    });   
+                }
+
+                $scope.check_backend_access = function(id, token) {
+                    $http.get("<?= base_url('admin_userList'); ?>/" + id + "/" + token)
+                    .then(function(response) {
+                        if (response.data.error) {
+                            alert(response.data.error); // Show alert for unauthorized access
+                            window.history.back(); // Go back to the previous page
+                        } else {
+                            window.location.href = "<?= base_url('admin_userList'); ?>/" + id + "/" + token;
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error("Error:", error);
+                        alert(error);
+                    });
+                };
 
                 //// Add New Kanban model
                 $scope.openAddNewKanban = function() {  
@@ -574,6 +632,40 @@
                 $scope.addNewKanban = {};
                 $scope.addNewKanban['new_kanban_name'] = '';
                 $scope.addNewKanban['leader'] = $scope.id;
+
+                $scope.logout = function() {
+
+                    const data = {  
+                        user_id: $scope.id,  
+                        token: $scope.token, 
+                    };
+
+                    console.log("data", data);
+                            
+                    // Make the API call  
+                    $http.post("<?= base_url('api/logout') ?>", data).then(function(response) {  
+                        if (response.data.status == "OK") {
+                            // Handle success  
+                            console.log('Logout successfully:', response.data); 
+                            
+                            $scope.logout_status = true;
+
+                            console.log("after logout", $scope.logout_status);
+
+                            window.location.href = '<?= base_url('') ?>';
+                        } else {
+                            $scope.errorAlert = true;
+                            $scope.error_msg = response.data.result;
+                            console.log("error", response);
+                            alert(response.data.message); 
+                        }
+                    })  
+                    .catch(function(error) {  
+                        // Handle error  
+                        console.error('Error logout:', error);  
+                    });                         
+
+                }
 
                 $scope.createNewKanban = function() {
 
@@ -591,7 +683,7 @@
                             if (response.data.status == "OK") {
                                 // Handle success  
                                 console.log('Kanban created successfully:', response.data);  
-                                location.href = '<?= base_url('profile/') ?>' + $scope.id;
+                                location.href = '<?= base_url('profile') ?>/' + $scope.id + "/" + $scope.token;
                             } else {
                                 $scope.errorAlert = true;
                                 $scope.error_msg = response.data.result;
@@ -651,7 +743,7 @@
                     
                     const data = {  
                         mode: "Edit",  
-                        email: $scope.passwordValidation.email,  
+                        email: $scope.formDetail.email, 
                         password: $scope.passwordEdit.password, 
                     };
 
@@ -663,10 +755,14 @@
                             // Handle success  
                             console.log('Reset password successfully:', response.data);  
                             alert("Password Reset Successfully."); 
-                            location.href = '<?= base_url('profile/') ?>' + $scope.id;
+
+                            setTimeout(function() {  
+                                location.href = '<?= base_url('profile') ?>/' + $scope.id + "/" + $scope.token;
+                            }, 1000);
+
                         }   else {
                             $scope.errorAlert = true;
-                            $scope.error_msg = response.data.result;
+                            $scope.error_msg = response.data.message;
                         }
                     })  
                         .catch(function(error) {  
@@ -711,7 +807,7 @@
                             console.log('Account validation successfully:', response.data);  
                             $('#passwordValidationModal').modal('hide'); // Hide the validation modal  
                             $('#editUserPwModal').modal('show'); // Show the modal  
-                        }   else {
+                        } else {
                             $scope.errorAlert = true;
                             $scope.error_msg = response.data.result;
                             console.log("error", response);
@@ -760,10 +856,10 @@
                         if (response.data.status == "OK") {
                             // Handle success  
                             console.log('User information edit successfully:', response.data);  
-                            location.href = '<?= base_url('profile/') ?>' + $scope.id;
+                            location.href = '<?= base_url('profile') ?>/' + $scope.id + "/" + $scope.token;
                         }   else {
                             $scope.errorAlert = true;
-                            $scope.error_msg = response.data.result;
+                            $scope.error_msg = response.data.message;
                         }
                     })  
                         .catch(function(error) {  
@@ -778,35 +874,21 @@
                     $('#editUserInfoModal').modal('hide'); // Close the modal  
                 };  
                
-                $scope.delete = function() {
-
-                    var tobeSubmit = $scope.formDetail;
-                    tobeSubmit["mode"] = $scope.mode;
-                    // tobeSubmit["token"] = $scope.token;
-                    tobeSubmit["id"] = $scope.id;
-
-                    $http.post("<?= base_url('') ?>", tobeSubmit).then(function(response) {
-
-                        if (response.data.status == "OK") {
-                            // location.href = '<?= base_url('') ?>';
-                        } else {
-                            alert(response.data.result);
-                        }
-
-                    }, function(response) {
-
-                        alert(response.data.result);
-
-                    });
-
-                }
-
                 console.log("id", $scope.id);
                 console.log("subtitle", $scope.mode);
                 
+                
                 if ($scope.id != "") {
 
-                    $http.get("<?= base_url('api/user_profile') ?>/" + $scope.id ).then(function(response) {
+                    if ($scope.token == null || $scope.token == '') {
+
+                        if (window.confirm("Unauthorized User! Please Proceed To Login!")) {
+                            location.href = '<?= base_url('') ?>';
+                        }
+
+                    }
+
+                    $http.get("<?= base_url('api/user_profile') ?>/" + $scope.id + "/" + $scope.token ).then(function(response) {
 
                         if (response.data.status == "OK") {
                             console.log("response", response);
@@ -833,6 +915,10 @@
                                         $scope.errorAlert = false;
                                         $scope.leader_notification = response.data.result.notificationDetail;
                                         console.log("leader notification", $scope.leader_notification);
+
+                                        $scope.leader_notification.forEach(function(item) {
+                                            item.message = $sce.trustAsHtml(item.message);
+                                        });
 
                                     } else {
                                         $scope.errorAlert = true;
@@ -893,6 +979,10 @@
                             $scope.general_notification = response.data.result.notificationDetail;
                             console.log("general notification", $scope.general_notification);
 
+                            $scope.general_notification.forEach(function(item) {
+                                item.message = $sce.trustAsHtml(item.message);
+                            });
+
                         } else {
                             $scope.errorAlert = true;
                             $scope.error_msg = response.data.result;
@@ -923,9 +1013,13 @@
                                 alert("Joined Kanban successfully!"); 
                                 $scope.target_kanban_id = response.data.result.kanban_id;
                                 console.log('target_kanban_id', $scope.target_kanban_id);
-                                location.href = '<?= base_url('kanban/') ?>' + $scope.target_kanban_id + '?userId=' + $scope.id; 
+
+                                setTimeout(function() {  
+                                    location.href = '<?= base_url('kanban/') ?>' + $scope.target_kanban_id + '/' + $scope.id + '/' + $scope.token; 
+                                }, 1000); 
+
                             } else {  
-                                alert(response.data.result);  
+                                alert(response.data.message);
                             }  
                         }, function(response) {  
                             alert("Error: " + response.data.result);  
@@ -948,13 +1042,19 @@
 
                         // Call the delete API  
                         $http.post("<?= base_url('api/member_rejected') ?>", dataToSend).then(function(response) {  
-                            if (response.data.status == "OK") {  
-                                alert("Invite Rejected"); 
-                                $scope.target_kanban_id = response.data.result.kanban_id;
-                                console.log('target_kanban_id', $scope.target_kanban_id);
-                                location.href = '<?= base_url('kanban/') ?>' + $scope.target_kanban_id + '?userId=' + $scope.id; 
+
+                            $c = null;
+
+                            if (response.data.status == "OK") {
+
+                                alert("Invite Rejected");
+
+                                setTimeout(function() {  
+                                    location.href = '<?= base_url('profile') ?>/' + $scope.id + "/" + $scope.token;
+                                }, 1000); 
+                                
                             } else {  
-                                alert(response.data.result);  
+                                alert(response.data.message);  
                             }  
                         }, function(response) {  
                             alert("Error: " + response.data.result);  
@@ -963,60 +1063,6 @@
                         return; 
                     }
                 }; 
-
-                $scope.saveData = function() {
-
-
-                    var tobeSubmit = $scope.formDetail;
-                    tobeSubmit["mode"] = $scope.mode;
-                    tobeSubmit["id"] = $scope.id;
-                    console.log("tobeSubmit", tobeSubmit);
-                    loadingshow();
-                    $http.post("<?= base_url('api/submitUser') ?>", tobeSubmit).then(function(response) {
-                        loadinghide();
-                        if (response.data.status == "OK") {
-                            location.href = '<?= base_url('admin_userList') ?>';
-                            // console.log(response.data);
-                        } else {
-                            console.log("no ok", response.data);
-                            alert(response.data.result);
-                        }
-
-                    }, function(response) {
-                        loadinghide();
-                        console.log("failed", response.data);
-                        alert(response);
-
-                    });
-
-                }
-
-                $scope.delete = function() {
-
-                    var tobeSubmit = $scope.formDetail;
-                    tobeSubmit["mode"] = $scope.mode;
-                    tobeSubmit["id"] = $scope.id;
-
-                    $http.post("<?= base_url('api/deleteUser') ?>", tobeSubmit).then(function(response) {
-
-                        if (response.data.status == "OK") {
-                            location.href = '<?= base_url('admin_userList') ?>';
-                        } else {
-                            alert(response.data.result);
-                        }
-
-                    }, function(response) {
-
-                        alert(response.data.result);
-
-                    });
-
-                    }
-
-                $scope.backList = function() {
-                    location.href = '<?= base_url('admin_userList') ?>';
-                }
-
 
             }).directive('ngConfirmClick', [
                 function() {

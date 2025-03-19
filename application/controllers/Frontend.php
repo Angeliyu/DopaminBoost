@@ -78,29 +78,39 @@ class Frontend extends CI_Controller {
     //===reset password page controller end===//
 
     //===profile page controller===//
-    public function home($id) {
+    public function home($id, $token) {
 
         $userData = $this->User_model->getOne(array(
             'id' => $id,
         ));
 
-        $this->data['userData'] = $userData;
-        $this->data['id'] = $id;
+        if (!$userData || $token != $userData['token']) {
 
-        //load the header
-        $this->load->view("frontend_header", $this->data);
- 
-        //this will redirect to the content php of the home page
-        //no s for view, even it is from views folder
-        $this->load->view("frontend_profile", $this->data);
- 
-        //load the footer
-        $this->load->view("common_footer", $this->data);
+            // Return JSON response for unauthorized access
+            echo json_encode(['error' => 'Unauthorized Access!']);
+            return;
+
+        } else {
+            
+            $this->data['userData'] = $userData;
+            $this->data['id'] = $id;
+            $this->data['token'] = $userData['token'];
+
+            //load the header
+            $this->load->view("frontend_header", $this->data);
+    
+            //this will redirect to the content php of the home page
+            //no s for view, even it is from views folder
+            $this->load->view("frontend_profile", $this->data);
+    
+            //load the footer
+            $this->load->view("common_footer", $this->data);
+        }
     }
     //===profile page controller end===//
 
     //===kanban page controller===//
-    public function kanban($id) {
+    public function kanban($id, $user_id, $token) {
 
         //load kanban model
         $this->load->model("Kanban_list_model");
@@ -109,18 +119,35 @@ class Frontend extends CI_Controller {
             'id' => $id,
         ));
 
-        $this->data['kanbanData'] = $kanbanData;
-        $this->data['id'] = $id;
+        $userData = $this->User_model->getOne(array(
+            'id' => $user_id,
+        ));
 
-        //load the header
-        $this->load->view("frontend_kanban_header", $this->data);
- 
-        //this will redirect to the content php of the home page
-        //no s for view, even it is from views folder
-        $this->load->view("frontend_kanban", $this->data);
- 
-        //load the footer
-        $this->load->view("common_footer", $this->data);
+        if (!$userData || $token != $userData['token']) {
+
+            // Return JSON response for unauthorized access
+            echo json_encode(['error' => 'Unauthorized Access!']);
+            return;
+
+        } else {
+
+            $this->data['kanbanData'] = $kanbanData;
+            $this->data['id'] = $id;
+            $this->data['token'] = $userData['token'];
+            $this->data['user_id'] = $userData['id'];
+
+            //load the header
+            $this->load->view("frontend_kanban_header", $this->data);
+    
+            //this will redirect to the content php of the home page
+            //no s for view, even it is from views folder
+            $this->load->view("frontend_kanban", $this->data);
+    
+            //load the footer
+            $this->load->view("common_footer", $this->data);
+
+        }
+
     }
     //===kanban page controller end===//
 }

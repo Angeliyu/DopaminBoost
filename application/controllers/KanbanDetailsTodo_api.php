@@ -141,19 +141,24 @@ class KanbanDetailsTodo_api extends MY_apicontroller {
 
             // $adminID = $this->adminAuth($token);
 
-            $eachData = $this->{$this->data['main_model']}->getOne(array(
+            $taskData = $this->{$this->data['main_model']}->getOne(array(
                 $this->data['primaryKey'] => $ID,
                 'is_deleted' => 0,
             ));
 
-            if (empty($eachData)) {
-                throw new Exception("Data Not Found!");
+            if (empty($taskData)) {
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Details Not Exist',
+                ]);
+                return;
             }
 
-            $eachData[$this->data['primaryKey']] = (int)$eachData[$this->data['primaryKey']];
+            $taskData[$this->data['primaryKey']] = (int)$taskData[$this->data['primaryKey']];
 
             $this->json_output(array(
-                'kanban_todo' => $eachData,
+                'kanban_todo' => $taskData,
             ));
         } catch (Exception $e) {
 
@@ -177,7 +182,6 @@ class KanbanDetailsTodo_api extends MY_apicontroller {
 				$mode = $this->input->post("mode", true);
 				$id = $this->input->post("id", true);
 
-				// $adminID = $this->adminAuth($token);
 				$kanban_id = $this->input->post("kanban_id", true);
                 $created_by = $this->input->post("created_by", true);
                 $type = $this->input->post("type", true);
@@ -205,7 +209,6 @@ class KanbanDetailsTodo_api extends MY_apicontroller {
 				switch ($mode) {
 					case "Add":
 						
-						// $sql['created_user_id'] = $adminID;
                         $sql['status'] = 1;
 						$sql['created_date'] = date("Y-m-d H:i:s");
 
@@ -216,7 +219,7 @@ class KanbanDetailsTodo_api extends MY_apicontroller {
                             'type' => 6, // task added
                             'created_by' => $created_by,
                             'kanban_id' => $kanban_id,
-                            'message' => 'The task: ' . $content_title . ' has been added to Todo Category. Added by ' . $userData['name'] . '(admin).',
+                            'message' => 'The task: <b>' . $content_title . '</b> has been added to Todo Category. Added by <b>' . $userData['name'] . '</b>(admin).',
                             'created_date' => date("Y-m-d H:i:s"),
                         ));
 
@@ -225,12 +228,17 @@ class KanbanDetailsTodo_api extends MY_apicontroller {
 
 						$ID = $id;
 
-						$eachData = $this->{$this->data['main_model']}->getOne(array(
+						$taskData = $this->{$this->data['main_model']}->getOne(array(
 							'id' => $ID,
 						));
 
-						if (empty($eachData)) {
-							throw new Exception("Data No Exist");
+						if (empty($taskData)) {
+                            // Return JSON error response
+                            echo json_encode([
+                                'status' => 'ERROR',
+                                'message' => 'Details Not Exist',
+                            ]);
+                            return;
 						}
 
 						// $sql['last_modified_user_id'] = $adminID;
@@ -257,7 +265,7 @@ class KanbanDetailsTodo_api extends MY_apicontroller {
                                 'type' => 7, // task moved
                                 'created_by' => $created_by,
                                 'kanban_id' => $kanban_id,
-                                'message' => 'The task: ' . $content_title . ' has been moved to Doing Category. Moved by ' . $userData['name'] . '(admin).',
+                                'message' => 'The task: <b>' . $content_title . '</b> has been moved to Doing Category. Moved by <b>' . $userData['name'] . '</b>(admin).',
                                 'created_date' => date("Y-m-d H:i:s"),
                             ));
 
@@ -281,7 +289,7 @@ class KanbanDetailsTodo_api extends MY_apicontroller {
                                 'type' => 7, // task moved
                                 'created_by' => $created_by,
                                 'kanban_id' => $kanban_id,
-                                'message' => 'The task: ' . $content_title . ' has been moved to Done Category. Moved by ' . $userData['name'] . '(admin).',
+                                'message' => 'The task: <b>' . $content_title . '</b> has been moved to Done Category. Moved by <b>' . $userData['name'] . '</b>(admin).',
                                 'created_date' => date("Y-m-d H:i:s"),
                             ));
 
@@ -296,7 +304,7 @@ class KanbanDetailsTodo_api extends MY_apicontroller {
                                 'type' => 2, // task updated
                                 'created_by' => $created_by,
                                 'kanban_id' => $kanban_id,
-                                'message' => 'The task: ' . $content_title . ' has been updated in Todo Category. Updated by ' . $userData['name'] . '(admin).',
+                                'message' => 'The task: <b>' . $content_title . '<b/> has been updated in Todo Category. Updated by <b>' . $userData['name'] . '</b>(admin).',
                                 'created_date' => date("Y-m-d H:i:s"),
                             ));
                         }
@@ -308,7 +316,12 @@ class KanbanDetailsTodo_api extends MY_apicontroller {
 					'id' => $ID,
 				));
 			} else {
-				throw new Exception("Invalid Parameters");
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Invalid Parameters',
+                ]);
+                return;
 			}
 		} catch (Exception $e) {
 			$this->json_output_error($e->getMessage());
@@ -332,12 +345,17 @@ class KanbanDetailsTodo_api extends MY_apicontroller {
                 $ID = $this->input->post("id", true);
                 // $adminID = $this->adminAuth($token);
 
-                $eachData = $this->{$this->data['main_model']}->getOne(array(
+                $taskData = $this->{$this->data['main_model']}->getOne(array(
                     $this->data['primaryKey'] => $ID,
                 ));
 
-                if (empty($eachData)) {
-                    throw new Exception("data not exists");
+                if (empty($taskData)) {
+                    // Return JSON error response
+					echo json_encode([
+						'status' => 'ERROR',
+						'message' => 'Details Not Exist',
+					]);
+					return;
                 }
 
                 $this->{$this->data['main_model']}->update(array(
@@ -350,8 +368,14 @@ class KanbanDetailsTodo_api extends MY_apicontroller {
                 $this->json_output(array(
                     $this->data['primaryKey'] => $ID,
                 ));
+
             } else {
-                throw new Exception("Invalid param");
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Invalid Parameter',
+                ]);
+                return;
             }
         } catch (Exception $e) {
             $this->json_output_error($e->getMessage());
@@ -388,7 +412,7 @@ class KanbanDetailsTodo_api extends MY_apicontroller {
 
 						$ID = $id;
 
-						$eachData = $this->{$this->data['main_model']}->getOne(array(
+						$taskData = $this->{$this->data['main_model']}->getOne(array(
 							'id' => $ID,
 						));
 
@@ -396,36 +420,42 @@ class KanbanDetailsTodo_api extends MY_apicontroller {
                             'id' => $user_id,
                         ));
 
-						if (empty($eachData)) {
-							throw new Exception("Data No Exist");
+						if (empty($taskData)) {
+                            // Return JSON error response
+                            echo json_encode([
+                                'status' => 'ERROR',
+                                'message' => 'Details Not Exist',
+                            ]);
+                            return;
 						}
 
 						// $sql['last_modified_user_id'] = $adminID;
-						$eachData['modified_date'] = date("Y-m-d H:i:s");
+						$taskData['modified_date'] = date("Y-m-d H:i:s");
 
                         // if status is Go To Doing
                         if ($status == 3) {
 
                             // delete from current table
-                            $eachData['is_deleted'] = 1;
+                            $taskData['is_deleted'] = 1;
 
                             $this->{$this->data['main_model']}->update(array(
                                 'id' => $id,
-                            ), $eachData);
+                            ), $taskData);
 
                             // insert into doing table
-                            unset($eachData['is_deleted']);
-                            unset($eachData['id']);
-                            $eachData['created_date'] = date("Y-m-d H:i:s");
+                            unset($taskData['is_deleted']);
+                            unset($taskData['id']);
+                            $taskData['created_date'] = date("Y-m-d H:i:s");
+                            $taskData['status'] = 3;
 
-                            $this->Kanban_details_doing_model->insert($eachData);
+                            $this->Kanban_details_doing_model->insert($taskData);
 
                             // create a notification
                             $this->Notification_model->insert(array(
                                 'type' => 7, // task moved
                                 'created_by' => $user_id,
                                 'kanban_id' => $kanban_id,
-                                'message' => 'The task: ' . $eachData['content_title'] . ' has been moved to Doing Category. Moved by ' . $edit_userData['name'] . '.',
+                                'message' => 'The task: <b>' . $taskData['content_title'] . '</b> has been moved to Doing Category. Moved by <b>' . $edit_userData['name'] . '</b>.',
                                 'created_date' => date("Y-m-d H:i:s"),
                             ));
                         }
@@ -438,7 +468,12 @@ class KanbanDetailsTodo_api extends MY_apicontroller {
 					'id' => $ID,
 				));
 			} else {
-				throw new Exception("Invalid Parameters");
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Invalid Parameters',
+                ]);
+                return;
 			}
 		} catch (Exception $e) {
 			$this->json_output_error($e->getMessage());
@@ -461,7 +496,6 @@ class KanbanDetailsTodo_api extends MY_apicontroller {
 				$mode = $this->input->post("mode", true);
 				$id = $this->input->post("id", true);
 
-				// $adminID = $this->adminAuth($token);
 				$kanban_id = $this->input->post("kanban_id", true);
                 $content_title = $this->input->post("content_title", true);
                 $content_description = $this->input->post("content_description", true);
@@ -482,12 +516,17 @@ class KanbanDetailsTodo_api extends MY_apicontroller {
 
 						$ID = $id;
 
-						$eachData = $this->{$this->data['main_model']}->getOne(array(
+						$taskData = $this->{$this->data['main_model']}->getOne(array(
 							'id' => $ID,
 						));
 
-						if (empty($eachData)) {
-							throw new Exception("Data No Exist");
+						if (empty($taskData)) {
+                            // Return JSON error response
+                            echo json_encode([
+                                'status' => 'ERROR',
+                                'message' => 'Details Not Exist',
+                            ]);
+                            return;
 						}
 
 						// $sql['last_modified_user_id'] = $adminID;
@@ -506,7 +545,7 @@ class KanbanDetailsTodo_api extends MY_apicontroller {
                             'type' => 2, // task updated
                             'created_by' => $edit_userData['id'],
                             'kanban_id' => $kanban_id,
-                            'message' => 'The task: ' . $eachData['content_title'] . ' has been edited by ' . $edit_userData['name'] . '.',
+                            'message' => 'The task: <b>' . $taskData['content_title'] . '</b> has been edited by <b>' . $edit_userData['name'] . '</b>.',
                             'created_date' => date("Y-m-d H:i:s"),
                         ));
 						
@@ -517,7 +556,12 @@ class KanbanDetailsTodo_api extends MY_apicontroller {
 					'id' => $ID,
 				));
 			} else {
-				throw new Exception("Invalid Parameters");
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Invalid Parameters',
+                ]);
+                return;
 			}
 		} catch (Exception $e) {
 			$this->json_output_error($e->getMessage());
@@ -543,12 +587,17 @@ class KanbanDetailsTodo_api extends MY_apicontroller {
 
                 // $adminID = $this->adminAuth($token);
 
-                $eachData = $this->{$this->data['main_model']}->getOne(array(
+                $taskData = $this->{$this->data['main_model']}->getOne(array(
                     $this->data['primaryKey'] => $ID,
                 ));
 
-                if (empty($eachData)) {
-                    throw new Exception("data not exists");
+                if (empty($taskData)) {
+                    // Return JSON error response
+					echo json_encode([
+						'status' => 'ERROR',
+						'message' => 'Details Not Exist',
+					]);
+					return;
                 }
 
                 $edit_userData = $this->User_model->getOne(array(
@@ -566,8 +615,8 @@ class KanbanDetailsTodo_api extends MY_apicontroller {
                 $this->Notification_model->insert(array(
                     'type' => 8, // task deleted
                     'created_by' => $edit_userData['id'],
-                    'kanban_id' => $eachData['kanban_id'],
-                    'message' => 'The task: ' . $eachData['content_title'] . ' has been deleted by ' . $edit_userData['name'] . '.',
+                    'kanban_id' => $taskData['kanban_id'],
+                    'message' => 'The task: <b>' . $taskData['content_title'] . '</b> has been deleted by <b>' . $edit_userData['name'] . '</b>.',
                     'created_date' => date("Y-m-d H:i:s"),
                 ));
 
@@ -576,7 +625,12 @@ class KanbanDetailsTodo_api extends MY_apicontroller {
                     $this->data['primaryKey'] => $ID,
                 ));
             } else {
-                throw new Exception("Invalid param");
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Invalid Parameters',
+                ]);
+                return;
             }
         } catch (Exception $e) {
             $this->json_output_error($e->getMessage());

@@ -333,6 +333,8 @@
                 $scope.errorAlert = false;
                 $scope.error_msg = "";
                 $scope.id = <?= isset($id) && !empty($id) ? '"' . $id . '"' : '""' ?>;
+                $scope.token = "<?= isset($token) && !empty($token) ? $token : '' ?>";
+				$scope.user_id = "<?= isset($user_id) && !empty($user_id) ? $user_id : '' ?>";
                 $scope.userList = [];  // Initialize user list
                 $scope.formDetail = {  
                     due_date: '',
@@ -503,10 +505,10 @@
                     tobeSubmit["mode"] = $scope.mode;
                     tobeSubmit["id"] = $scope.id;
 
-                    $http.post("<?= base_url('') ?>", tobeSubmit).then(function(response) {
+                    $http.post("<?= base_url('api/deleteKanbanDetailsDoing') ?>", tobeSubmit).then(function(response) {
 
                         if (response.data.status == "OK") {
-                            location.href = '<?= base_url('admin_kanban_details_doing') ?>';
+                            location.href = "<?= base_url('admin_kanban_details_doing'); ?>/" + $scope.user_id + "/" + $scope.token;
                         } else {
                             alert(response.data.result);
                         }
@@ -540,7 +542,7 @@
                         loadinghide();
                         if (response.data.status == "OK") {
                             console.log(response);
-                            location.href = '<?= base_url('admin_kanban_details_doing') ?>';
+                            location.href = "<?= base_url('admin_kanban_details_doing'); ?>/" + $scope.user_id + "/" + $scope.token;
                         } else {
                             console.log("no ok", response.data);
                             alert(response.data.result);
@@ -556,7 +558,19 @@
                 }
 
                 $scope.backList = function() {
-                    location.href = '<?= base_url('admin_kanban_details_doing') ?>';
+                    $http.get("<?= base_url('admin_kanban_details_doing'); ?>/" + $scope.user_id + "/" + $scope.token)
+                    .then(function(response) {
+                        if (response.data.error) {
+                            alert(response.data.error); // Show alert for unauthorized access
+                            window.history.back(); // Go back to the previous page
+                        } else {
+                            window.location.href = "<?= base_url('admin_kanban_details_doing'); ?>/" + $scope.user_id + "/" + $scope.token;
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error("Error:", error);
+                        alert(error);
+                    });
                 }
 
                 $scope.searchUser = function() {
