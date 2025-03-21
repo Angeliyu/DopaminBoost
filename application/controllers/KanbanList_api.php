@@ -114,6 +114,7 @@ class KanbanList_api extends MY_apicontroller {
 				$kanban_name = $this->input->post("name", true);
                 $owned_by = $this->input->post("owned_by", true);
                 $raw_member = $this->input->post("member", true);
+                $user_id = $this->input->post("user_id", true);
 
                 if (is_array($raw_member)) {  
                     $member = implode(',', $raw_member); // Convert array to comma-separated string  
@@ -158,6 +159,37 @@ class KanbanList_api extends MY_apicontroller {
                                 );
                                 $this->User_kanban_model->insert($user_kanban_sql);
                             }
+                        }
+
+                        $created_user_data = $this->User_model->getOne(array(
+                            'id' => $user_id,
+                        ));
+
+                        $new_kanban = $this->{$this->data['main_model']}->getOne(array(
+                            'id' => $ID,
+                            'is_deleted' => 0
+                        ));
+
+                        if ($created_user_data['role'] == 1) {
+                            // create a notification
+                            $this->Notification_model->insert(array(
+                                'type' => 19, // new kanban created
+                                'created_by' => $user_id,
+                                'kanban_id' => $ID,
+                                'receiver' => null,
+                                'message' => 'User <b>'. $created_user_data['name'] .'</b> (Admin) created new kanban :<b>' . $new_kanban['name'] . '</b>.',
+                                'created_date' => date("Y-m-d H:i:s"),
+                            ));
+                        } else {
+                            // create a notification
+                            $this->Notification_model->insert(array(
+                                'type' => 19, // new kanban created
+                                'created_by' => $user_id,
+                                'kanban_id' => $ID,
+                                'receiver' => null,
+                                'message' => 'User <b>'. $created_user_data['name'] .'</b> created new kanban :<b>' . $new_kanban['name'] . '</b>.',
+                                'created_date' => date("Y-m-d H:i:s"),
+                            ));
                         }
 
 						break;
@@ -259,6 +291,33 @@ class KanbanList_api extends MY_apicontroller {
                             }
                         }
 
+                        $edited_user_data = $this->User_model->getOne(array(
+                            'id' => $user_id,
+                        ));
+
+                        if ($edited_user_data['role'] == 1) {
+                            // create a notification
+                            $this->Notification_model->insert(array(
+                                'type' => 20, // kanban edit
+                                'created_by' => $user_id,
+                                'kanban_id' => $kanbanData['id'],
+                                'receiver' => null,
+                                'message' => 'User <b>'. $edited_user_data['name'] .'</b> (Admin) edit data in kanban :<b>' . $kanbanData['name'] . '</b>.',
+                                'created_date' => date("Y-m-d H:i:s"),
+                            ));
+                        } else {
+                            // create a notification
+                            $this->Notification_model->insert(array(
+                                'type' => 20, // kanban edit
+                                'created_by' => $user_id,
+                                'kanban_id' => $kanbanData['id'],
+                                'receiver' => null,
+                                'message' => 'User <b>'. $edited_user_data['name'] .'</b> edit data in kanban :<b>' . $kanbanData['name'] . '</b>.',
+                                'created_date' => date("Y-m-d H:i:s"),
+                            ));
+                        }
+
+                        
 						break;
 				}
 
