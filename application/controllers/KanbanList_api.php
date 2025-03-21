@@ -65,7 +65,7 @@ class KanbanList_api extends MY_apicontroller {
 
         $dataList = $this->{$this->data['main_model']}->fetch($count, $start, $where, $like, $sorting, "id,name,owned_by,member,created_date,modified_date");
 
-        $userlist = $this->{$this->data['main_model']}->getIDKeyArray("name", array("is_deleted" => 0));
+        $userlist = $this->User_model->getIDKeyArray("name", array("is_deleted" => 0));
 
         if (!empty($dataList)) {
             foreach ($dataList as $k => $v) {
@@ -213,9 +213,42 @@ class KanbanList_api extends MY_apicontroller {
                             }
                         }
 
+                        // fetch current user_kanban records by kanban_id already soft deleted before
+                        $soft_deleted_records = $this->User_kanban_model->get_where(array(
+                            'kanban_id' => $id,
+                            'is_deleted' => 1
+                        ));
+
+                        if (!empty($soft_deleted_records)) {
+
+                            $soft_deleted_user_ids = array_column($soft_deleted_records, 'user_id');
+
+                            // Check if soft deleted users exist in all_members and restore them
+                            foreach ($soft_deleted_user_ids as $soft_deleted_user_id) {
+                                if (in_array($soft_deleted_user_id, $all_members)) {
+                                    $this->User_kanban_model->update(array(
+                                        'user_id' => $soft_deleted_user_id,
+                                        'kanban_id' => $id
+                                    ), array(
+                                        'is_deleted' => 0,
+                                        'modified_date' => date("Y-m-d H:i:s")
+                                    ));
+                                }
+                            }
+
+                        }
+
+                        // fetch current user_kanban records by kanban_id
+                        $new_existing_records = $this->User_kanban_model->get_where(array(
+                            'kanban_id' => $id,
+                            'is_deleted' => 0
+                        ));
+
+                        $new_existing_user_ids = array_column($new_existing_records, 'user_id');
+
                         // insert new member(s) not already in user_kanban
                         foreach ($all_members as $member_id) {
-                            if (!in_array($member_id, $existing_user_ids)) {
+                            if (!in_array($member_id, $new_existing_user_ids)) {
 
                                 $this->User_kanban_model->insert(array(
                                     'kanban_id' => $id,
@@ -252,8 +285,6 @@ class KanbanList_api extends MY_apicontroller {
 
 		try {
 
-			// $adminID = $this->adminAuth($token);
-
 			$kanbanData = $this->{$this->data['main_model']}->getOne(array(
 				'id' => $ID,
 				'is_deleted' => 0,
@@ -269,6 +300,17 @@ class KanbanList_api extends MY_apicontroller {
 			}
 
 			$kanbanData['id'] = (int) $kanbanData['id'];
+
+            $owned_by_Data = $this->User_model->getOne(array(
+                'id' => $kanbanData['owned_by'],
+                'is_deleted' => 0
+            ));
+
+            // $owned_by_Data = $this->User_model->fetch2("id,name");
+
+            
+
+            $kanbanData['owned_by_name'] = $owned_by_Data['name'];
 
 			$this->json_output(array(
 				'kanbanDetail' => $kanbanData,
@@ -1039,54 +1081,71 @@ class KanbanList_api extends MY_apicontroller {
 					return;
                 }
 
-                $old_leader = $kanbanData['owned_by'];
-                $members = $kanbanData['member'];
-
-                $old_leader_data = $this->User_model->getOne(array(
-                    'id' => $old_leader,
+                
+                // check whether requested user owned other kanban
+                $check_availablility = $this->{$this->data['main_model']}->get_where(array(
+                    'owned_by' => $member_id,
+                    'is_deleted' => 0
                 ));
 
-                $new_leader_data = $this->User_model->getOne(array(
-                    'id' => $member_id,
-                ));
+                if (!empty($check_availablility)) {
+                    // Return JSON error response
+					echo json_encode([
+						'status' => 'ERROR',
+						'message' => 'This Member Already Owned Another Kanban',
+					]);
+					return;
+                } else {
 
-                // Convert members to an array
-                $membersArray = !empty($members) ? explode(',', $members) : [];
+                    $old_leader = $kanbanData['owned_by'];
+                    $members = $kanbanData['member'];
 
-                // Add the old leader to the members list (if not already present)
-                if (!in_array($old_leader, $membersArray)) {
-                    $membersArray[] = $old_leader;
+                    $old_leader_data = $this->User_model->getOne(array(
+                        'id' => $old_leader,
+                    ));
+
+                    $new_leader_data = $this->User_model->getOne(array(
+                        'id' => $member_id,
+                    ));
+
+                    // Convert members to an array
+                    $membersArray = !empty($members) ? explode(',', $members) : [];
+
+                    // Add the old leader to the members list (if not already present)
+                    if (!in_array($old_leader, $membersArray)) {
+                        $membersArray[] = $old_leader;
+                    }
+
+                    // Remove the new leader from the members list
+                    $membersArray = array_filter($membersArray, function ($value) use ($member_id) {
+                        return $value != $member_id;
+                    });
+
+                    $this->db->trans_start();
+
+                    $sql['member'] = implode(',', $membersArray);
+                    $sql['modified_date'] = date("Y-m-d H:i:s");
+
+
+                    $this->{$this->data['main_model']}->update(array(
+                        'id' => $id,
+                    ), $sql);
+
+                    // create a notification
+                    $this->Notification_model->insert(array(
+                        'type' => 4, // become leader
+                        'created_by' => $old_leader,
+                        'kanban_id' => $kanbanData['id'],
+                        'message' => 'User <b>'. $new_leader_data['name'] .'</b> become the Leader of Kanban: <b>' . $kanbanData['name'] . '</b>. Transfer by: <b>' . $old_leader_data['name'] . '</b>.',
+                        'created_date' => date("Y-m-d H:i:s"),
+                    ));
+
+                    $this->db->trans_complete();
+
+                    $this->json_output(array(
+                        'id' => $ID,
+                    ));
                 }
-
-                // Remove the new leader from the members list
-                $membersArray = array_filter($membersArray, function ($value) use ($member_id) {
-                    return $value != $member_id;
-                });
-
-                $this->db->trans_start();
-
-                $sql['member'] = implode(',', $membersArray);
-                $sql['modified_date'] = date("Y-m-d H:i:s");
-
-
-                $this->{$this->data['main_model']}->update(array(
-                    'id' => $id,
-                ), $sql);
-
-                // create a notification
-                $this->Notification_model->insert(array(
-                    'type' => 4, // become leader
-                    'created_by' => $old_leader,
-                    'kanban_id' => $kanbanData['id'],
-                    'message' => 'User <b>'. $new_leader_data['name'] .'</b> become the Leader of Kanban: <b>' . $kanbanData['name'] . '</b>. Transfer by: <b>' . $old_leader_data['name'] . '</b>.',
-                    'created_date' => date("Y-m-d H:i:s"),
-                ));
-
-                $this->db->trans_complete();
-
-				$this->json_output(array(
-					'id' => $ID,
-				));
 			} else {
                 // Return JSON error response
                 echo json_encode([

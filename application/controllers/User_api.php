@@ -295,11 +295,12 @@ class User_api extends MY_apicontroller {
 		try {
 			if (isset($_SERVER["CONTENT_TYPE"]) && strpos($_SERVER["CONTENT_TYPE"], "application/json") !== false) {
 				$_POST = array_merge($_POST, (array) json_decode(trim(file_get_contents('php://input')), true));
+
 				$onwed_by = $this->input->post("onwed_by", true);
 
 				if ($onwed_by != 0) {
 
-					$userData = $this->User_model->getOne(
+					$userData = $this->{$this->data['main_model']}->getOne(
 						array(
 							"is_deleted" => 0,
 							"id" => $onwed_by,
@@ -328,6 +329,7 @@ class User_api extends MY_apicontroller {
 						'userData' => $userData,
 					)
 				);
+
 			} else {
 				// Return JSON error response
 				echo json_encode([
@@ -351,6 +353,7 @@ class User_api extends MY_apicontroller {
 		try {
 			if (isset($_SERVER["CONTENT_TYPE"]) && strpos($_SERVER["CONTENT_TYPE"], "application/json") !== false) {
 				$_POST = array_merge($_POST, (array) json_decode(trim(file_get_contents('php://input')), true));
+
 				$member = $this->input->post("member", true);
 
 				if ($member != 0) {	
@@ -398,6 +401,124 @@ class User_api extends MY_apicontroller {
 			$this->json_output_error($e->getMessage());
 		}
 	}
+
+	// used in kanban edit (backend)
+	public function getAllAvailableUser()
+	{
+        header('Content-Type: application/json; charset=utf-8');
+		header("Access-Control-Allow-Origin: *");
+		header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
+
+
+		try {
+
+			if (isset($_SERVER["CONTENT_TYPE"]) && strpos($_SERVER["CONTENT_TYPE"], "application/json") !== false) {
+				$_POST = array_merge($_POST, (array) json_decode(trim(file_get_contents('php://input')), true));
+
+				//load kanban_list model
+				$this->load->model("Kanban_list_model");
+
+                $kanban_id = $this->input->post("kanban_id", true);
+
+				$kanban_data = $this->Kanban_list_model->getOne(array(
+					'id' => $kanban_id,
+					'is_deleted' => 0,
+				));
+
+				if (empty($kanban_data)) {
+					// Return JSON error response
+					echo json_encode([
+						'status' => 'ERROR',
+						'message' => 'Kanban Not Exist',
+					]);
+					return;
+				}
+
+				// get all user of current kanban
+				$users_in_kanban = [];
+
+				$leader_in_kanban = [];
+				
+				// add leader user into array
+				if (!empty($kanban_data['owned_by'])) {
+					$leader_in_kanban[] = $kanban_data['owned_by'];
+				}
+
+				$all_users = $this->{$this->data['main_model']}->fetch2('id,name');
+
+				// filters all_users to exclude the user in $leader_in_kanban
+				$available_users = array_filter($all_users, function ($user) use ($leader_in_kanban) {
+					return !in_array($user['id'], $leader_in_kanban);
+				});
+
+				// reset array keys
+				$available_users = array_values($available_users);
+
+                $this->json_output(array(
+                    'available_user' => $available_users,
+                ));
+			} else {
+				// Return JSON error response
+				echo json_encode([
+					'status' => 'ERROR',
+					'message' => 'Invalid Parameters',
+				]);
+				return;
+			}
+		} catch (Exception $e) {
+			$this->json_output_error($e->getMessage());
+		}
+    }
+
+	// used in kanban add (backend)
+	public function getAllAvailableUserExceptLeader()
+	{
+        header('Content-Type: application/json; charset=utf-8');
+		header("Access-Control-Allow-Origin: *");
+		header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
+
+
+		try {
+
+			if (isset($_SERVER["CONTENT_TYPE"]) && strpos($_SERVER["CONTENT_TYPE"], "application/json") !== false) {
+				$_POST = array_merge($_POST, (array) json_decode(trim(file_get_contents('php://input')), true));
+
+                $user_id = $this->input->post("user_id", true);
+
+				// get all user of current kanban
+				$users_in_kanban = [];
+
+				$selected_leader = [] ;
+
+				// append selected leader user id
+				$selected_leader[] = $user_id;
+
+				// fetch all users
+				$all_users = $this->{$this->data['main_model']}->fetch2('id,name');
+
+				// filters all_users to exclude the user in $selected_leader
+				$available_users = array_filter($all_users, function ($user) use ($selected_leader) {
+					return !in_array($user['id'], $selected_leader);
+				});
+
+				// reset array keys
+				$available_users = array_values($available_users);
+
+                $this->json_output(array(
+                    'available_user' => $available_users,
+                ));
+			} else {
+				// Return JSON error response
+				echo json_encode([
+					'status' => 'ERROR',
+					'message' => 'Invalid Parameters',
+				]);
+				return;
+			}
+		} catch (Exception $e) {
+			$this->json_output_error($e->getMessage());
+		}
+    }
 
 	// frontend
 	public function edit_from_frontend()
@@ -635,10 +756,9 @@ class User_api extends MY_apicontroller {
 					$users_in_kanban = array_merge($users_in_kanban, $memberArray);
 				}
 
-				$all_users = $this->{$this->data['main_model']}->get_where(array(
-					'is_deleted' => 0,
-				));
+				$all_users = $this->{$this->data['main_model']}->fetch2('id,name');
 
+				// filters all_users to exclude those already in $users_in_kanban
 				$available_users = array_filter($all_users, function ($user) use ($users_in_kanban) {
 					return !in_array($user['id'], $users_in_kanban);
 				});

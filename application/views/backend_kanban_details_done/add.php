@@ -121,6 +121,22 @@
                                                             </select>  
                                                         </div>  
                                                     </div> 
+                                                    
+                                                    <div class="mb-2 row">
+                                                        <div class="col-md-4">
+                                                            <label for="done_task_title"
+                                                                class="form-label">Task Title
+                                                            </label>
+
+                                                            <div class="">
+                                                                <input type="text" name="done_task_title" id="done_task_title"
+                                                                    ng-model="formDetail.content_title" class="form-control"
+                                                                    placeholder="Please enter title of task"
+                                                                    required>
+
+                                                            </div>
+                                                        </div>
+                                                    </div>
 
                                                     <div class="mb-2 row">  
                                                         <label for="done_task_type" class="form-label">Task Type</label>  
@@ -140,22 +156,6 @@
                                                             </select>  
                                                         </div>  
                                                     </div>  
-
-                                                    <div class="mb-2 row">
-                                                        <div class="col-md-4">
-                                                            <label for="done_task_title"
-                                                                class="form-label">Task Title
-                                                            </label>
-
-                                                            <div class="">
-                                                                <input type="text" name="done_task_title" id="done_task_title"
-                                                                    ng-model="formDetail.content_title" class="form-control"
-                                                                    placeholder="Please enter title of task"
-                                                                    required>
-
-                                                            </div>
-                                                        </div>
-                                                    </div>
 
                                                     <div class="mb-2 row" ng-show="formDetail.type == 1">
                                                         <label for="done_task_desc" class="form-label">Task Description</label>

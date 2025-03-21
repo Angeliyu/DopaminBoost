@@ -182,7 +182,12 @@ class UserAuth_api extends CI_Controller
                 }
 
             } else {
-                throw new Exception("Invalid Parameters");
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Invalid Paramters',
+                ]);
+                return;
             }
         } catch (Exception $e) {
             echo json_encode([

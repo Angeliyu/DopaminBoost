@@ -157,6 +157,8 @@ $route['api/detailsUser/(:any)'] = 'user_api/getDetail/$1';
 $route['api/deleteUser'] = 'user_api/delete';
 $route['api/userSearch'] = 'user_api/userSearch';
 $route['api/multipleUserSearch'] = 'user_api/multipleUserSearch';
+$route['api/getAllAvailableUser'] = 'user_api/getAllAvailableUser';
+$route['api/getAllAvailableUserExceptLeader'] = 'user_api/getAllAvailableUserExceptLeader';
 
 //// backend_api kanban list
 $route['api/getKanbanList'] = 'kanbanList_api/getKanbanList';

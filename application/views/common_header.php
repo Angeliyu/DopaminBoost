@@ -51,7 +51,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>  
     <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />  
 
-
     <style>
       .header-image {  
         display: flex;  
@@ -90,14 +89,6 @@
     
     </div>
 
-    <!-- <div style="display: flex; justify-content: space-around; width: 100%; font-size: 18px; font-weight: bold; border-bottom: 2px black solid;">
-      <a ng-href="<?= base_url('admin_userList'); ?>/{{user_id}}/{{token}}">User List</a>
-      <a href="<?= base_url('admin_kanbanList'); ?>">Kanban List</a>
-      <a href="<?= base_url('admin_kanban_details_todo'); ?>">Kanban Details Todo List</a>
-      <a href="<?= base_url('admin_kanban_details_doing'); ?>">Kanban Details Doing List</a>
-      <a href="<?= base_url('admin_kanban_details_done'); ?>">Kanban Details Done List</a>
-      <a href="<?= base_url('admin_notificationList'); ?>">Notification List</a>
-    </div> -->
     
     
 

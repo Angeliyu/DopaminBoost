@@ -67,22 +67,69 @@
                                                         </div>
                                                     </div>
 
-                                                    <div class="mb-2 row">  
-                                                        <label for="user_id" class="form-label">Owned By</label>  
-                                                        <div class="">  
-                                                            <select class="form-select" ng-model="formDetail.owned_by" name="user_id" id="user_id" data-toggle="select2">  
-                                                                <option ng-repeat="user in userList" value="{{user.id}}">  
+                                                    <div class="mb-2 row" ng-if="mode == 'Add'">  
+                                                        <div class="col-md-4">
+                                                        
+                                                            <label for="add_user_id" class="form-label">Owned By</label>  
+                                                          
+                                                            <select class="form-select" ng-model="formDetail.owned_by" name="add_user_id" id="add_user_id">  
+                                                                <option ng-repeat="user in user_list" value="{{user.id}}">  
                                                                     {{user.name}}  
                                                                 </option>  
                                                             </select>  
-                                                        </div>  
-                                                    </div>  
 
-                                                    <div class="mb-2 row">  
-                                                        <label for="user_ids" class="form-label" ng-if="formDetail.member == '' || formDetail.member == null">Members</label>  
-                                                        <label for="user_ids" class="form-label" ng-if="formDetail.member.length > 0">Reselect Members</label>  
-                                                        <div class="">  
-                                                            <select class="form-select" ng-model="formDetail.member" name="user_ids" id="user_ids" multiple data-toggle="select2">  
+                                                        </div>  
+                                                    </div>
+
+                                                    <div class="mb-2 row" ng-if="mode == 'Edit'">  
+                                                        <div class="col-md-4">
+
+                                                            <label for="owned_by_id" class="form-label">Owned By</label>  
+
+                                                            <input type="text" name="owned_by_id" id="owned_by_id" ng-model="formDetail.owned_by_name" class="form-control"
+                                                                ng-disabled="formDetail.owned_by_name != null || formDetail.owned_by_name != ''">
+
+                                                            <br/>
+                                                            <a class="btn btn-info btn-sm" ng-click="edit_owned_by_user()" ng-if="edit_ownedBy == false">Edit Owned By User</a>
+                                                            <a class="btn btn-info btn-sm" ng-click="edit_owned_by_user()" ng-if="edit_ownedBy == true">Cancel Edit Owned By User</a>
+                                                            <br/>
+                                                            <br/>
+
+                                                            <!-- <select class="form-select" ng-model="formDetail.owned_by" name="user_id" id="user_id">  
+                                                                <option ng-repeat="user in userList" value="{{user.id}}">  
+                                                                    {{user.name}}  
+                                                                </option>  
+                                                            </select>   -->
+                                                        
+                                                            <!-- <select class="form-select" ng-model="formDetail.owned_by" name="user_id" id="user_id" data-toggle="select2" ng-if="edit_ownedBy == true">  
+                                                                <option ng-repeat="user in userList" value="{{user.id}}">  
+                                                                    {{user.name}}  
+                                                                </option>  
+                                                            </select>   -->
+
+                                                        </div>  
+                                                    </div>
+                                                    
+                                                    <div class="mb-2 row" ng-if="edit_ownedBy == true && mode == 'Edit'">  
+                                                        <div class="col-md-4">
+
+                                                            <label for="user_id" class="form-label">Owned By</label>  
+
+                                                            <select class="form-select" ng-model="new_owned_by" name="user_id" id="user_id" ng-if="edit_ownedBy == true"  ng-change="searchUser(new_owned_by)">  
+                                                                <option ng-repeat="user in user_list" ng-value="{{user.id}}">  
+                                                                    {{user.name}}  
+                                                                </option>  
+                                                            </select>  
+
+                                                        </div>  
+                                                    </div>
+
+                                                    <!-- <div class="mb-2 row" ng-if="mode == 'Add'">  
+                                                        <div class="col-md-4">
+                                                            <label for="add_user_ids" class="form-label" ng-if="formDetail.member == '' || formDetail.member == null">Members</label>  
+                                                            <label for="add_user_ids" class="form-label" ng-if="formDetail.member.length > 0">Reselect Members</label>  
+                                                        
+                                                            <select class="form-select" ng-model="formDetail.member" name="add_user_ids" id="add_user_ids" multiple data-toggle="select2">  
                                                                 <?php if (!empty($userList)) {  
                                                                     foreach ($userList as $v) { ?>  
                                                                         <option value="<?= $v['id'] ?>"><?= $v['name'] ?></option>  
@@ -90,8 +137,8 @@
                                                                 } ?>  
                                                             </select>  
                                                         </div>  
-                                                    </div>
-                                                    
+                                                    </div> -->
+
                                                     <div class="mb-2 row" ng-if="formDetail.member.length > 0">  
                                                         <label for="joined_user_ids" class="form-label">Joined Member(s)</label>  
                                                         <div>
@@ -106,6 +153,81 @@
                                                             </ul>
                                                         </div>
                                                     </div>
+
+                                                    <div class="mb-2 row">  
+                                                        <div class="col-md-4">
+                                                            <label for="user_ids" class="form-label" ng-if="formDetail.member == '' || formDetail.member == null">Members</label>  
+                                                            <label for="user_ids" class="form-label" ng-if="formDetail.member.length > 0">Reselect Members</label>
+
+                                                            <br/>
+                                                            <button class="btn btn-secondary" type="button" ng-click="toggleDropdown()" ng-if="mode == 'Edit'">
+                                                                Select Members <span class="caret"></span>
+                                                            </button>
+                                                            <button class="btn btn-secondary" type="button" ng-click="getAllExceptLeader()" ng-if="mode == 'Add'">
+                                                                Select Member(s) <span class="caret"></span>
+                                                            </button>
+                                                            <br/>
+
+                                                            <div ng-if="dropdownOpen == true">
+                                                                <ul>
+                                                                    <li ng-repeat="user in all_available_users">
+                                                                        <label>
+                                                                            <input type="checkbox" ng-checked="isSelected(user.id)" ng-click="toggleSelection(user.id)"> 
+                                                                            {{ user.name }}
+                                                                        </label>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
+
+                                                            <br/>
+                                                            <div ng-if="all_available_users_except_leader.length > 0">
+                                                                <ul>
+                                                                    <li ng-repeat="user in all_available_users_except_leader">
+                                                                        <label>
+                                                                            <input type="checkbox" ng-checked="NewIsSelected(user.id)" ng-click="NewToggleSelection(user.id)"> 
+                                                                            {{ user.name }}
+                                                                        </label>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
+
+                                                            <!-- <select class="form-multi-select"
+                                                                ng-model="reselect_member"
+                                                                name="user_ids"
+                                                                id="user_ids"
+                                                                multiple
+                                                                ng-options="user.id as user.name for user in all_available_users track by user.id">
+                                                            </select> -->
+
+                                                            <!-- <ng-select class="form-multi-select"
+                                                                multiple
+                                                                ng-model="formDetail.member"
+                                                                name="user_ids"
+                                                                id="user_ids"
+                                                                options="user.id as user.name for user in userList"
+                                                                placeholder="Select options">
+                                                            </ng-select> -->
+
+                                                            <!-- <select class="form-select" ng-model="formDetail.member" name="user_ids" id="user_ids" multiple>  
+                                                                <?php if (!empty($userList)) {  
+                                                                    foreach ($userList as $v) { ?>  
+                                                                        <option value="<?= $v['id'] ?>"><?= $v['name'] ?></option>  
+                                                                <?php }  
+                                                                } ?>  
+                                                            </select>   -->
+                                                        
+                                                            <!-- <select class="form-select" ng-model="formDetail.member" name="user_ids" id="user_ids" multiple data-toggle="select2" ng-change="searchMultipleUser(formDetail.member)">  
+                                                                <?php if (!empty($userList)) {  
+                                                                    foreach ($userList as $v) { ?>  
+                                                                        <option value="<?= $v['id'] ?>"><?= $v['name'] ?></option>  
+                                                                <?php }  
+                                                                } ?>  
+                                                            </select>   -->
+
+                                                        </div>  
+                                                    </div>
+                                                    
+                                                    
                                                    
                                                 </div>
                                             </fieldset>
@@ -125,34 +247,16 @@
         </div> <!-- content -->
 
         <script>
+
             var app = angular.module("myApp",[]);
            
             app.controller("myCtrl", function($scope, $http, $timeout) {
 
-                // $scope.formDetail.member = [];
-
                 $scope.formDetail = {
-                    'member': [],
+                    member : [],
                 };
 
                 $timeout(function() {  
-                    // Initialize Select2 for owned by field  
-                    $('#user_id').select2().on('change', function() {  
-                        $scope.$apply(function() {  
-                            // Update owned_by model  
-                            $scope.formDetail.owned_by = $(this).val();  
-                            $scope.searchUser();  
-                        });  
-                    });  
-
-                    // Initialize Select2 for members field  
-                    $('#user_ids').select2().on('change', function() {  
-                        $scope.$apply(function() {  
-                            // Update member model  
-                            $scope.formDetail.member = $(this).val();  
-                            $scope.searchMultipleUser();  
-                        });  
-                    });  
 
                     // Initialize Select2 for joined members field  
                     $('#joined_user_ids').select2().on('change', function() {  
@@ -176,6 +280,57 @@
                 $scope.errorAlert = false;
                 $scope.error_msg = "";
                 $scope.id = <?= isset($id) && !empty($id) ? '"' . $id . '"' : '""' ?>;
+                $scope.edit_ownedBy = false;
+                $scope.new_owned_by = '';
+                $scope.userList = <?= json_encode($userList ?? []) ?>;
+                $scope.reselect_member = [];
+                $scope.dropdownOpen = false;  // Controls dropdown visibility
+
+
+                console.log("Member list:", $scope.userList);
+
+                // Toggle dropdown visibility
+                $scope.toggleDropdown = function () {
+                    $scope.dropdownOpen = !$scope.dropdownOpen;
+                    console.log("able dropdown", $scope.dropdownOpen);
+                };
+
+                // Check if user is selected (Edit)
+                $scope.isSelected = function (id) {
+                    console.log("selected", $scope.reselect_member);
+                    return $scope.reselect_member.includes(id);
+                };
+
+                // Check if user is selected (Add)
+                $scope.NewIsSelected = function (id) {
+                    console.log("selected", $scope.formDetail.member);
+                    return $scope.formDetail.member.includes(id);
+                };
+
+                // Toggle user selection (Edit)
+                $scope.toggleSelection = function (id) {
+                    let idx = $scope.reselect_member.indexOf(id);
+                    if (idx > -1) {
+                        $scope.reselect_member.splice(idx, 1); // Remove if already selected
+                    } else {
+                        $scope.reselect_member.push(id); // Add if not selected
+                    }
+                };
+
+                // Toggle user selection (Add)
+                $scope.NewToggleSelection = function (id) {
+                    let idx = $scope.formDetail.member.indexOf(id);
+                    if (idx > -1) {
+                        $scope.formDetail.member.splice(idx, 1); // Remove if already selected
+                    } else {
+                        $scope.formDetail.member.push(id); // Add if not selected
+                    }
+                };
+
+                $scope.edit_owned_by_user = function() {
+                    $scope.edit_ownedBy = !$scope.edit_ownedBy;
+                    console.log("edit_ownedBy", $scope.edit_ownedBy);
+                }
 
                 if ($scope.id != "") {
 
@@ -187,6 +342,34 @@
                             $scope.formDetail = response.data.result.kanbanDetail;
                             $scope.formDetail.member = $scope.formDetail.member.split(',');
                             console.log("formDetail", $scope.formDetail);
+
+                            if ($scope.formDetail.id != null) {
+
+                                var tobeSubmit = {
+                                    'kanban_id': $scope.formDetail.id,
+                                };
+
+                                $http.post("<?= base_url( "/api/getAllAvailableUser") ?>", tobeSubmit).then(function(response) {
+
+                                    if (response.data.status == "OK") {
+                                        console.log("get current members response", response);
+
+                                        $scope.all_available_users = response.data.result.available_user;
+                                        $scope.all_available_users = response.data.result.available_user.map(user => ({
+                                            id: parseInt(user.id), // Convert ID to integer
+                                            name: user.name
+                                        }));
+                                        console.log("all members", $scope.all_available_users);
+                                    } else {
+                                        alert(response.data.result);
+                                    }
+                                }, function(response) {
+                                    console.log("response", response);
+                                    alert(response.data.result);
+                                });
+
+                            }
+
                         } else {
                             $scope.errorAlert = true;
                             $scope.error_msg = response.data.result;
@@ -197,6 +380,34 @@
                         $scope.error_msg = response.data.result;
                     });
 
+                }
+
+                $scope.getAllExceptLeader = function() {
+
+                    console.log("owned by", $scope.formDetail.owned_by);
+
+                    var tobeSubmit = {
+                        'user_id': $scope.formDetail.owned_by,
+                    };
+
+                    $http.post("<?= base_url( "/api/getAllAvailableUserExceptLeader") ?>", tobeSubmit).then(function(response) {
+
+                        if (response.data.status == "OK") {
+                            console.log("get all members except leader response", response);
+
+                            $scope.all_available_users_except_leader = response.data.result.available_user;
+                            $scope.all_available_users_except_leader = response.data.result.available_user.map(user => ({
+                                id: parseInt(user.id), // Convert ID to integer
+                                name: user.name
+                            }));
+                            console.log("all members", $scope.all_available_users_except_leader);
+                        } else {
+                            alert(response.data.result);
+                        }
+                    }, function(response) {
+                        console.log("response", response);
+                        alert(response.data.result);
+                    });
                 }
 
                 $scope.delete = function() {
@@ -224,6 +435,27 @@
 
                 $scope.saveData = function() {
 
+                    console.log("leader user", $scope.formDetail.owned_by);
+                    console.log("original member users", $scope.formDetail.member);
+
+                    console.log("reselect members", $scope.reselect_member);
+
+                    if ($scope.mode == 'Edit') {
+                        if ($scope.reselect_member.length > 0) {  // check if array is not empty
+                            $scope.formDetail.member = angular.copy($scope.reselect_member); // Copy the array
+                        } 
+                    }
+
+                    console.log("new selected users", $scope.formDetail.member);
+
+                    if ($scope.formDetail.owned_by == '' || $scope.formDetail.owned_by == null) {
+                        alert("Please Select A Leader User");
+                        return;
+                    } else if ($scope.formDetail.member.length < 0) {
+                        alert("Please Select At Least One Member User");
+                        return;
+                    }
+
                     var tobeSubmit = $scope.formDetail;
                     tobeSubmit["mode"] = $scope.mode;
                     tobeSubmit["id"] = $scope.id;
@@ -234,7 +466,7 @@
                         loadinghide();
                         if (response.data.status == "OK") {
                             console.log(response);
-                            location.href = "<?= base_url('admin_kanbanList'); ?>/" + user_id + "/" + token;
+                            location.href = "<?= base_url('admin_kanbanList'); ?>/" + $scope.user_id + "/" + $scope.token;
                         } else {
                             console.log("no ok", response.data);
                             alert(response.data.result);
@@ -269,8 +501,8 @@
                 $scope.fetchAvailableUsers = function() {  
                     $http.get("<?= base_url('api/getAvailableUser') ?>").then(function(response) {  
                         if (response.data.status == "OK") {  
-                            $scope.userList = response.data.result; // Store available users 
-                            console.log('available user', $scope.userList);
+                            $scope.user_list = response.data.result; // Store available users 
+                            console.log('available user', $scope.user_list);
                         } else {  
                             console.log(response.data.result);  
                         }  
@@ -280,19 +512,45 @@
                 };  
 
                 // Call the function when the controller initializes  
-                $scope.fetchAvailableUsers();  
+                $scope.fetchAvailableUsers(); 
+                
+                $scope.getCurrentMember = function() {
 
-                $scope.searchUser = function() {
+                    console.log("kanban id", $scope.formDetail.id);
 
                     var tobeSubmit = {
-                        'onwed_by': $scope.formDetail.owned_by,
-                        'token': $scope.token,
+                        'kanban_id': $scope.formDetail.id,
+                    };
+
+                    $http.post("<?= base_url( "/api/getCurrentMembers") ?>", tobeSubmit).then(function(response) {
+
+                        if (response.data.status == "OK") {
+                            console.log("get current members response", response);
+                            console.log("id", response.data.result.available_user.id);
+                            // $scope.formDetail.member = 
+                        } else {
+                            alert(response.data.result);
+                        }
+                    }, function(response) {
+                        console.log("response", response);
+                        alert(response.data.result);
+                    });
+
+                }
+
+
+                $scope.searchUser = function(id) {
+
+                    console.log("new owned by", $scope.new_owned_by);
+
+                    var tobeSubmit = {
+                        'onwed_by': id,
                     };
 
                     $http.post("<?= base_url( "/api/userSearch") ?>", tobeSubmit).then(function(response) {
 
                         if (response.data.status == "OK") {
-                            console.log("response", response);
+                            console.log("user search response", response);
                             console.log("id", response.data.result.userData.id);
                             $scope.formDetail.owned_by = response.data.result.userData.id;
                             console.log("$scope.formDetail.owned_by", $scope.formDetail.owned_by);
@@ -306,18 +564,19 @@
 
                 }
 
-                $scope.searchMultipleUser = function() {
+                $scope.searchMultipleUser = function(member) {
+
+                    console.log("selected member(s)", member);
 
                     var tobeSubmit = {
-                        'member': $scope.formDetail.member,
-                        'token': $scope.token,
+                        'member': member,
                     };
 
                     $http.post("<?= base_url( "/api/multipleUserSearch") ?>", tobeSubmit).then(function(response) {
 
                         if (response.data.status == "OK") {
                             console.log("response", response);
-                            $scope.formDetail.owned_by = response.data.result.userData.id;
+                            $scope.formDetail.member = response.data.result.userData.id;
                         } else {
                             alert(response.data.result);
                         }
