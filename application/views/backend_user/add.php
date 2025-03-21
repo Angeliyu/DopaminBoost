@@ -160,6 +160,7 @@
                     var tobeSubmit = $scope.formDetail;
                     tobeSubmit["mode"] = $scope.mode;
                     tobeSubmit["id"] = $scope.id;
+                    tobeSubmit["user_id"] = $scope.user_id;
                     console.log("tobeSubmit", tobeSubmit);
                     loadingshow();
                     $http.post("<?= base_url('api/submitUser') ?>", tobeSubmit).then(function(response) {
@@ -169,7 +170,7 @@
                             // console.log(response.data);
                         } else {
                             console.log("no ok", response.data);
-                            alert(response.data.result);
+                            alert(response.data.message);
                         }
 
                     }, function(response) {

@@ -140,6 +140,7 @@ class User_api extends MY_apicontroller {
 				$name = $this->input->post("name", true);
                 $email = $this->input->post("email", true);
 				$role = $this->input->post("role", true);
+				$user_id = $this->input->post("user_id", true);
 				
 				$sql = array(
 					'name' => $name,
@@ -151,10 +152,38 @@ class User_api extends MY_apicontroller {
 
 				switch ($mode) {
 					case "Add":
+
+						$check_same_email = $this->{$this->data['main_model']}->getOne(array(
+							'email' => $email,
+							'is_deleted' => 0
+						));
+
+						if ($check_same_email) {
+							// Return JSON error response
+							echo json_encode([
+								'status' => 'ERROR',
+								'message' => 'Same Email Exist',
+							]);
+							return;
+						}
 						
 						$sql['created_date'] = date("Y-m-d H:i:s");
 
 						$ID = $this->{$this->data['main_model']}->insert($sql);
+
+						$created_user_id = $this->User_model->getOne(array(
+							'id' => $user_id,
+						));
+
+						// create a notification
+						$this->Notification_model->insert(array(
+							'type' => 21, // information updated
+							'created_by' => $user_id,
+							'kanban_id' => null,
+							'receiver' => null,
+							'message' => 'User <b>' . $created_user_id['name'] . '</b>(Admin) created a new user.',
+							'created_date' => date("Y-m-d H:i:s"),
+						));
 
 						break;
 					case "Edit":
@@ -175,11 +204,40 @@ class User_api extends MY_apicontroller {
 							return;
 						}
 
+						// Check if email exists for another record
+						$check_same_email = $this->{$this->data['main_model']}->getOne(array(
+							'email' => $email,
+							'id !=' => $ID, // Exclude current record
+							'is_deleted' => 0
+						));
+
+						if ($check_same_email) {
+							// Return JSON error response
+							echo json_encode([
+								'status' => 'ERROR',
+								'message' => 'Same Email Exist for Another User',
+							]);
+							return;
+						}
+
 						$sql['modified_date'] = date("Y-m-d H:i:s");
 
 						$this->{$this->data['main_model']}->update(array(
 							'id' => $id,
 						), $sql);
+
+						$edited_user_id = $this->User_model->getOne(array(
+							'id' => $user_id,
+						));
+
+						$this->Notification_model->insert(array(
+							'type' => 12, // information updated
+							'created_by' => $user_id,
+							'kanban_id' => null,
+							'receiver' => $id,
+							'message' => 'User <b>' . $edited_user_id['name'] . '</b>(Admin) updated user <b>' . $userData['name'] . '</b> information.',
+							'created_date' => date("Y-m-d H:i:s"),
+						));
 						
 						break;
 				}
@@ -561,6 +619,22 @@ class User_api extends MY_apicontroller {
 							echo json_encode([
 								'status' => 'ERROR',
 								'message' => 'User No Exist',
+							]);
+							return;
+						}
+
+						// Check if email exists for another record
+						$check_same_email = $this->{$this->data['main_model']}->getOne(array(
+							'email' => $email,
+							'id !=' => $ID, // Exclude current record
+							'is_deleted' => 0
+						));
+
+						if ($check_same_email) {
+							// Return JSON error response
+							echo json_encode([
+								'status' => 'ERROR',
+								'message' => 'Same Email Exist for Another User',
 							]);
 							return;
 						}

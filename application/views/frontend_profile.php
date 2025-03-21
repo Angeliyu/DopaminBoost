@@ -857,9 +857,11 @@
                             // Handle success  
                             console.log('User information edit successfully:', response.data);  
                             location.href = '<?= base_url('profile') ?>/' + $scope.id + "/" + $scope.token;
-                        }   else {
+                        } else {
                             $scope.errorAlert = true;
                             $scope.error_msg = response.data.message;
+                            alert(response.data.message);
+                            $scope.userInfoEdit.email = '';
                         }
                     })  
                         .catch(function(error) {  
