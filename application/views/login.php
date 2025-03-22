@@ -109,6 +109,11 @@
                 
                 $scope.submitData = function() {
 
+                    if ($scope.login_email == '') {
+                        alert("Please Enter Your Email");
+                        return;
+                    }
+
                     var tobeSubmit = {  
                         email: $scope.login_email,  
                         password: $scope.login_password  

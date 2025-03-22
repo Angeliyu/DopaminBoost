@@ -120,10 +120,26 @@
            
             app.controller("myCtrl", function($scope, $http, $timeout) {
 
-                $scope.login_email = "";
-                $scope.login_password = "";
+                $scope.fpv_email = "";
+                $scope.fpv_sq1 = "";
+                $scope.fpv_sq2 = "";
                 
                 $scope.submitData = function() {
+
+                    // Validation rules
+                    const validationFields = [
+                        { field: $scope.fpv_email, message: "Please Enter Your Email" },
+                        { field: $scope.fpv_sq1, message: "Please Enter Your Answer For The First Safety Question" },
+                        { field: $scope.fpv_sq2, message: "Please Enter Your Answer For The First Safety Question" },
+                    ];
+
+                    // Check for missing fields
+                    for (let i = 0; i < validationFields.length; i++) {
+                        if (!validationFields[i].field) { // Check for null, undefined, and empty string
+                            alert(validationFields[i].message);
+                            return;
+                        }
+                    }
 
                     var tobeSubmit = {  
                         email: $scope.fpv_email,  

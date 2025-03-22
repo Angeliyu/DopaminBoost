@@ -107,11 +107,26 @@
                 
                 $scope.submitData = function() {
 
+                    // Validation rules
+                    const validationFields = [
+                        { field: $scope.reset_password, message: "Please Enter Your New Password" },
+                        { field: $scope.reset_retype_password, message: "Please Re-type Your Password" },
+                    ];
+
+                    // Check for missing fields
+                    for (let i = 0; i < validationFields.length; i++) {
+                        if (!validationFields[i].field) { // Check for null, undefined, and empty string
+                            alert(validationFields[i].message);
+                            return;
+                        }
+                    }
+
                     if ($scope.reset_password != $scope.reset_retype_password) {
                         // empty the retype password field
                         $scope.reset_retype_password = "";
                         // give alert
                         alert("Your Passwords Do Not Match");
+                        return;
                     }
 
                     var tobeSubmit = {  
@@ -128,7 +143,7 @@
                             location.href = '<?= base_url('') ?>';
                         } else {
                             console.log("no ok", response.data);
-                            alert(response.data.result);
+                            alert(response.data.message);
                         }
 
                     }, function(response) {

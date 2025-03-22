@@ -169,11 +169,30 @@
                 
                 $scope.submitData = function() {
 
+                    // Validation rules
+                    const validationFields = [
+                        { field: $scope.register_username, message: "Please Enter Your Username" },
+                        { field: $scope.register_email, message: "Please Enter Your Email" },
+                        { field: $scope.register_password, message: "Please Enter Your Password" },
+                        { field: $scope.register_retype_password, message: "Please Re-type Your Password" },
+                        { field: $scope.register_sq1, message: "Please Answer The First Safety Question" },
+                        { field: $scope.register_sq2, message: "Please Answer The Second Safety Question" }
+                    ];
+
+                    // Check for missing fields
+                    for (let i = 0; i < validationFields.length; i++) {
+                        if (!validationFields[i].field) { // Check for null, undefined, and empty string
+                            alert(validationFields[i].message);
+                            return;
+                        }
+                    }
+
                     if ($scope.register_password != $scope.register_retype_password) {
                         // empty the retype password field
                         $scope.register_retype_password = "";
                         // give alert
                         alert("Your Passwords Do Not Match");
+                        return;
                     }
 
                     var tobeSubmit = {  
@@ -192,12 +211,13 @@
                         if (response.data.status == "OK") {
                             console.log(response.data);
                             $scope.id = response.data.id;
+                            $scope.token = response.data.id.token;
                             console.log('id', $scope.id);
-                            location.href = '<?= base_url('profile') ?>/' + $scope.id;
+                            location.href = '<?= base_url('profile') ?>/' + $scope.id + "/" + $scope.token;
                             
                         } else {
                             console.log("no ok", response.data);
-                            alert(response.data.result);
+                            alert(response.data.message);
                         }
 
                     }, function(response) {

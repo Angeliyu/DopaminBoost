@@ -136,6 +136,9 @@ class UserAuth_api extends CI_Controller
                 // if don't have same email
                 if (empty($checkAvailable)) {
 
+                    // Generate a random token  
+                    $token = bin2hex(random_bytes(32));  // Generate a secure token
+
                     // add new user
                     $userdata = $this->{$this->data['main_model']}->insert(array(
                         'name' => $username,
@@ -143,6 +146,7 @@ class UserAuth_api extends CI_Controller
                         'password' => $encrypted_password,
                         'safety_word_1' => $register_sq1,
                         'safety_word_2' => $register_sq2,
+                        'token' => $token
                     ));
 
                     $new_user_data = $this->{$this->data['main_model']}->getOne(array(
