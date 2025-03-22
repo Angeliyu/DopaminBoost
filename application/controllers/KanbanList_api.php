@@ -1781,6 +1781,81 @@ class KanbanList_api extends MY_apicontroller {
         }
     }
 
+    public function editKanbanName()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+		header("Access-Control-Allow-Origin: *");
+		header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
+
+
+		try {
+
+			if (isset($_SERVER["CONTENT_TYPE"]) && strpos($_SERVER["CONTENT_TYPE"], "application/json") !== false) {
+				$_POST = array_merge($_POST, (array) json_decode(trim(file_get_contents('php://input')), true));
+
+				$kanban_id = $this->input->post("kanban_id", true);
+                $user_id = $this->input->post("user_id", true);
+                $kanban_name = $this->input->post("kanban_name", true);
+
+				
+                $ID = $kanban_id;
+
+                $kanbanData = $this->{$this->data['main_model']}->getOne(array(
+                    'id' => $kanban_id,
+                    'is_deleted' => 0
+                ));
+
+                if (empty($kanbanData)) {
+                    // Return JSON error response
+					echo json_encode([
+						'status' => 'ERROR',
+						'message' => 'Kanban Not Exist',
+					]);
+					return;
+                }
+
+                $this->db->trans_start();
+
+                $this->{$this->data['main_model']}->update(array(
+                    'id' => $kanban_id,
+                    'is_deleted' => 0
+                ), array(
+                    'name' => $kanban_name
+                ));
+                
+                $edited_user_data = $this->User_model->getOne(array(
+                    'id' => $user_id,
+                    'is_deleted' => 0
+                ));
+
+                // create a notification
+                $this->Notification_model->insert(array(
+                    'type' => 20, // kanban edit
+                    'created_by' => $user_id,
+                    'kanban_id' => $kanban_id,
+                    'receiver' => null,
+                    'message' => 'User <b>'. $edited_user_data['name'] .'</b> edited kanban name from <b>' . $kanbanData['name'] . '</b> to <b>' . $kanban_name . '</b>.',
+                    'created_date' => date("Y-m-d H:i:s"),
+                ));
+
+                $this->db->trans_complete();
+
+				$this->json_output(array(
+					'id' => $ID,
+				));
+			} else {
+                // Return JSON error response
+                echo json_encode([
+                    'status' => 'ERROR',
+                    'message' => 'Invalid Parameters',
+                ]);
+                return;
+			}
+		} catch (Exception $e) {
+			$this->json_output_error($e->getMessage());
+		}
+    }
+
 }
 
 ?>

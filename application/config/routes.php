@@ -107,6 +107,7 @@ $route['api/requestLeader'] = 'kanbanList_api/requestLeader';
 $route['api/acceptRequest'] = 'kanbanList_api/acceptRequest';
 $route['api/rejectRequest'] = 'kanbanList_api/rejectRequest';
 $route['api/checkAuthorization'] = 'kanbanList_api/checkAuthorization';
+$route['api/editKanbanName'] = 'kanbanList_api/editKanbanName';
 
 //// kanban todo task api
 $route['api/editKanbanDetailsTodo'] = 'kanbanDetailsTodo_api/edit_from_frontend';

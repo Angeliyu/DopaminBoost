@@ -61,7 +61,11 @@
                     <tbody style="border-bottom: 2px black solid;">
                         <tr style="width: 100%; font-size: 18px;">
                             <td style="width: 20%; text-align: left;" class="header_image"><img src="<?= base_url('assets/img/Dopamin_Boost_logo.png') ?>" alt="Logo" style="max-width: 80%; margin-top: 0.7%; margin-left: -1%;" /></td>
-                            <td style="width: 60%; text-align: center;"><p style="text-align: bottom; color: grey;">Kanban Name</p> <br/> <h2 class="page-title"><b> {{ formDetail.name }} </b> <br> <button class="btn btn-success" style="font-size: 20px; border-radius: 12px; padding: 5px;" ng-if="formDetail.todo.length < 1 && formDetail.doing.length < 1 && formDetail.done.length > 1" ng-click="kanban_complete()">COMPLETE KANBAN</button> </h2></td>
+                            <td style="width: 60%; text-align: center;"><p style="text-align: bottom; color: grey;">Kanban Name</p> 
+                                <br/> 
+                                <h2 class="page-title"><b> {{ formDetail.name }} </b> <button class="btn btn-info" style="font-weight: bold;" ng-click="openEditKanbanName()" ng-if="userId == formDetail.owned_by">Edit</button> 
+                                <br> <button class="btn btn-success" style="font-size: 20px; border-radius: 12px; padding: 5px;" ng-if="formDetail.todo.length < 1 && formDetail.doing.length < 1 && formDetail.done.length > 1" ng-click="kanban_complete()">COMPLETE KANBAN</button> </h2>
+                            </td>
                             <td style="width: 10%; text-align: center; word-wrap: normal;" ng-if="!logout_status"><i class="fa fa-bell" style="cursor: pointer; font-size: 50px; color: #0d6efd;" ng-click="openNotificationData()"></i><br/>Notification</td>
                             <td style="width: 10%; text-align: center; word-wrap: normal;" ng-if="!logout_status"><i class="fa fa-users" style="cursor: pointer; font-size: 50px; color: #0d6efd;" ng-click="showMember()"></i><br/>Member Lists</td>
                         </tr>
@@ -598,7 +602,29 @@
             </div>
         </div>
 
-
+        <!-- Edit Kanban Name Modal -->  
+        <div class="modal fade" id="editKanbanNameModal" tabindex="-1" role="dialog" aria-labelledby="editKanbanNameModal" aria-hidden="true">  
+            <div class="modal-dialog" role="document">  
+                <div class="modal-content">  
+                    <div class="modal-header">  
+                        <h5 class="modal-title" id="editKanbanNameModal">Edit Kanban Name</h5>  
+                        <button type="button" class="btn-close" aria-label="Close" ng-click="closeEditKanbanName()"></button>  
+                    </div>  
+                    <div class="modal-body">  
+                        <form id="editKanbanNameForm">
+                            <div class="form-group">  
+                                <label for="edit_kanban_name">Kanban Name</label>  
+                                <input type="text" class="form-control" id="edit_kanban_name" ng-model="edit_kanban_name" required>  
+                            </div>  
+                        </form>  
+                    </div>  
+                    <div class="modal-footer">  
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" ng-click="closeEditKanbanName()">Close</button>  
+                        <button type="button" class="btn btn-primary" ng-click="submitEditKanbanName()">Save changes</button>  
+                    </div>  
+                </div>  
+            </div>  
+        </div>
 
         <script>
             var app = angular.module("myApp",['720kb.datepicker', 'ui.bootstrap', 'ngSanitize']);
@@ -611,10 +637,49 @@
                 $scope.token = "<?= isset($token) && !empty($token) ? $token : '' ?>";
                 $scope.userId = "<?= isset($user_id) && !empty($user_id) ? $user_id : '' ?>";
                 $scope.minDate = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD" 
+                $scope.edit_kanban_name = "";
 
                 //// Log the userId for confirmation  
                 console.log("userId:", $scope.userId); 
                 // get user id from url end
+
+                // close edit kanban name modal
+                $scope.closeEditKanbanName = function() {
+                    $('#editKanbanNameModal').modal('hide'); // Close the modal 
+                }
+
+                // open edit kanban name modal
+                $scope.openEditKanbanName = function() {
+                    $('#editKanbanNameModal').modal('show'); // Close the modal 
+                }
+
+                $scope.submitEditKanbanName = function() {
+                    const data = {  
+                        user_id: $scope.userId,  
+                        kanban_name: $scope.edit_kanban_name,
+                        kanban_id: $scope.formDetail.id,                         
+                    };
+
+                    console.log("data", data);
+                          
+                    // Make the API call  
+                    $http.post("<?= base_url('api/editKanbanName') ?>", data).then(function(response) {  
+                        if (response.data.status == "OK") {
+                            // Handle success  
+                            console.log('Kanban Name edit successfully:', response.data);
+                            location.href = '<?= base_url('kanban/') ?>' + $scope.id + '/' + $scope.userId + '/' + $scope.token;
+                        } else {
+                            $scope.errorAlert = true;
+                            $scope.error_msg = response.data.message;
+                            alert(response.data.message);
+                            $scope.userInfoEdit.email = '';
+                        }
+                    })  
+                        .catch(function(error) {  
+                            // Handle error  
+                            console.error('Error editing kanban name:', error);  
+                        }); 
+                }
 
                 $scope.back_to_profile = function(user_id, token) {
                     $http.get("<?= base_url('profile'); ?>/" + user_id + "/" + token)
