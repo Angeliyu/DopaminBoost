@@ -127,10 +127,16 @@ class KanbanList_api extends MY_apicontroller {
 
                 $ID = null;
 
+                $created_user_data = $this->User_model->getOne(array(
+                    'id' => $user_id,
+                ));
+
                 $this->db->trans_start();
 
 				switch ($mode) {
 					case "Add":
+
+                        $this->db->trans_start();
 						
 						$sql['created_date'] = date("Y-m-d H:i:s");
 
@@ -161,10 +167,6 @@ class KanbanList_api extends MY_apicontroller {
                             }
                         }
 
-                        $created_user_data = $this->User_model->getOne(array(
-                            'id' => $user_id,
-                        ));
-
                         $new_kanban = $this->{$this->data['main_model']}->getOne(array(
                             'id' => $ID,
                             'is_deleted' => 0
@@ -192,6 +194,8 @@ class KanbanList_api extends MY_apicontroller {
                             ));
                         }
 
+                        $this->db->trans_complete();
+
 						break;
 					case "Edit":
 
@@ -207,6 +211,8 @@ class KanbanList_api extends MY_apicontroller {
                             ]);
                             return;
 						}
+
+                        $this->db->trans_start();
 
 						$sql['modified_date'] = date("Y-m-d H:i:s");
 
@@ -290,19 +296,15 @@ class KanbanList_api extends MY_apicontroller {
 
                             }
                         }
-
-                        $edited_user_data = $this->User_model->getOne(array(
-                            'id' => $user_id,
-                        ));
-
-                        if ($edited_user_data['role'] == 1) {
+                        
+                        if ($created_user_data['role'] == 1) {
                             // create a notification
                             $this->Notification_model->insert(array(
                                 'type' => 20, // kanban edit
                                 'created_by' => $user_id,
                                 'kanban_id' => $kanbanData['id'],
                                 'receiver' => null,
-                                'message' => 'User <b>'. $edited_user_data['name'] .'</b> (Admin) edit data in kanban :<b>' . $kanbanData['name'] . '</b>.',
+                                'message' => 'User <b>'. $created_user_data['name'] .'</b> (Admin) edit data in kanban :<b>' . $kanbanData['name'] . '</b>.',
                                 'created_date' => date("Y-m-d H:i:s"),
                             ));
                         } else {
@@ -312,11 +314,12 @@ class KanbanList_api extends MY_apicontroller {
                                 'created_by' => $user_id,
                                 'kanban_id' => $kanbanData['id'],
                                 'receiver' => null,
-                                'message' => 'User <b>'. $edited_user_data['name'] .'</b> edit data in kanban :<b>' . $kanbanData['name'] . '</b>.',
+                                'message' => 'User <b>'. $created_user_data['name'] .'</b> edit data in kanban :<b>' . $kanbanData['name'] . '</b>.',
                                 'created_date' => date("Y-m-d H:i:s"),
                             ));
                         }
 
+                        $this->db->trans_complete();
                         
 						break;
 				}
@@ -364,10 +367,6 @@ class KanbanList_api extends MY_apicontroller {
                 'id' => $kanbanData['owned_by'],
                 'is_deleted' => 0
             ));
-
-            // $owned_by_Data = $this->User_model->fetch2("id,name");
-
-            
 
             $kanbanData['owned_by_name'] = $owned_by_Data['name'];
 
@@ -949,46 +948,80 @@ class KanbanList_api extends MY_apicontroller {
                     $membersArray[] = $old_leader;
                 }
 
-                // Remove the new leader from the members list
-                $membersArray = array_filter($membersArray, function ($value) use ($new_leader) {
-                    return $value != $new_leader;
-                });
+                // Ensure the request user (new_leader) exists in membersArray before proceeding
+                if (!in_array($new_leader, $membersArray)) {
 
-                $sql = array(
-                    'owned_by' => $new_leader,
-				);
+                    $this->db->trans_start();
 
-                $this->db->trans_start();
+                    // update request notification
+                    $this->Notification_model->update(array(
+                        'id' => $notification_id,
+                        'is_deleted' => 0,
+                    ), array(
+                        'is_read' => 1,
+                        'is_accepted' => 2,
+                        'modified_date' => date("Y-m-d H:i:s"),
+                    ));
 
-                $sql['member'] = implode(',', $membersArray);
-                $sql['modified_date'] = date("Y-m-d H:i:s");
+                    // create a notification
+                    $this->Notification_model->insert(array(
+                        'type' => 18, // reject leader role request
+                        'created_by' => $member_id,
+                        'kanban_id' => $kanbanData['id'],
+                        'receiver' => $kanbanData['owned_by'],
+                        'message' => 'User <b>'. $new_leader_data['name'] .'</b> not exist in the Kanban: <b>' . $kanbanData['name'] . '</b>. Request Failed.',
+                        'created_date' => date("Y-m-d H:i:s"),
+                    ));
+
+                    $this->db->trans_complete();
+
+                    echo json_encode([
+                        'status' => 'ERROR',
+                        'message' => 'Request user is not a member of this Kanban.',
+                    ]);
+                    return;
+                } else {
+                    // Remove the new leader from the members list
+                    $membersArray = array_filter($membersArray, function ($value) use ($new_leader) {
+                        return $value != $new_leader;
+                    });
+
+                    $sql = array(
+                        'owned_by' => $new_leader,
+                    );
+
+                    $this->db->trans_start();
+
+                    $sql['member'] = implode(',', $membersArray);
+                    $sql['modified_date'] = date("Y-m-d H:i:s");
 
 
-                $this->{$this->data['main_model']}->update(array(
-                    'id' => $id,
-                ), $sql);
+                    $this->{$this->data['main_model']}->update(array(
+                        'id' => $id,
+                    ), $sql);
 
-                // update the notification
-                $this->Notification_model->update(array(
-                    'id' => $notification_id,
-                    'is_deleted' => 0
-                ), array(
-                    'is_read' => 1,
-                    'is_accepted'=> 1,
-                    'modified_date' => date("Y-m-d H:i:s")
-                ));
+                    // update the notification
+                    $this->Notification_model->update(array(
+                        'id' => $notification_id,
+                        'is_deleted' => 0
+                    ), array(
+                        'is_read' => 1,
+                        'is_accepted'=> 1,
+                        'modified_date' => date("Y-m-d H:i:s")
+                    ));
 
-                // create a notification
-                $this->Notification_model->insert(array(
-                    'type' => 17, // approve leader role request
-                    'created_by' => $member_id,
-                    'kanban_id' => $kanbanData['id'],
-                    'receiver' => $new_leader,
-                    'message' => 'User <b>'. $old_leader_data['name'] .'</b> approve the request of Leader role from <b>' . $new_leader_data['name'] . '</b> for Kanban: <b>' . $kanbanData['name'] . '</b>.',
-                    'created_date' => date("Y-m-d H:i:s"),
-                ));
+                    // create a notification
+                    $this->Notification_model->insert(array(
+                        'type' => 17, // approve leader role request
+                        'created_by' => $member_id,
+                        'kanban_id' => $kanbanData['id'],
+                        'receiver' => $new_leader,
+                        'message' => 'User <b>'. $old_leader_data['name'] .'</b> approve the request of Leader role from <b>' . $new_leader_data['name'] . '</b> for Kanban: <b>' . $kanbanData['name'] . '</b>.',
+                        'created_date' => date("Y-m-d H:i:s"),
+                    ));
 
-                $this->db->trans_complete();
+                    $this->db->trans_complete();
+                }
 
 				$this->json_output(array(
 					'id' => $ID,

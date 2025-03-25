@@ -301,9 +301,7 @@
                 <div class="modal-content">  
                     <div class="modal-header">  
                         <h5 class="modal-title" id="editUserInfoModal">Edit User Information</h5>  
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" ng-click="closeEditUserInfoData()">  
-                            <span aria-hidden="true">&times;</span>  
-                        </button>  
+                        <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close" ng-click="closeEditUserInfoData()"> </button>  
                     </div>  
                     <div class="modal-body">  
                         <form id="editUserInfoForm">
@@ -333,9 +331,7 @@
                 <div class="modal-content">  
                     <div class="modal-header">  
                         <h5 class="modal-title" id="passwordValidationModal">Password Edit Validation</h5>  
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" ng-click="closePasswordValidationData()">  
-                            <span aria-hidden="true">&times;</span>  
-                        </button>  
+                        <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close" ng-click="closePasswordValidationData()"></button>  
                     </div>  
                     <div class="modal-body">  
                         <form id="passwordValidationForm">
@@ -351,7 +347,6 @@
                                 <input type="text" class="form-control" id="safety_validation_2" ng-model="passwordValidation.sq2" required>  
                             </div>    
                             
-                            <input type="hidden" ng-model="userInfoEdit.id"> <!-- Hidden input for user email -->  
                         </form>
                     </div>  
                     <div class="modal-footer">  
@@ -368,9 +363,7 @@
                 <div class="modal-content">  
                     <div class="modal-header">  
                         <h5 class="modal-title" id="editUserPwModal">Edit Password</h5>  
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" ng-click="closePasswordEditData()">  
-                            <span aria-hidden="true">&times;</span>  
-                        </button>  
+                        <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close" ng-click="closePasswordEditData()"></button>  
                     </div>  
                     <div class="modal-body">  
                         <h6><i class="text-info">Validated Successful! Please type your new password below</i></h6>
@@ -696,6 +689,9 @@
                             console.error('Error creating kanban:', error);  
                         });                         
 
+                    } else {
+                        alert("Please Enter Kanban Name");
+                        return;
                     }
 
                 }
@@ -731,6 +727,20 @@
 
                 //// Function to send the new password data to api
                 $scope.submitPasswordEdit = function() {  
+
+                    // Validation rules
+                    const validationFields = [
+                        { field: $scope.passwordEdit.password, message: "Please Enter Your New Password" },
+                        { field: $scope.passwordEdit.retype_password, message: "Please Re-type Your Password" },
+                    ];
+
+                    // Check for missing fields
+                    for (let i = 0; i < validationFields.length; i++) {
+                        if (!validationFields[i].field) { // Check for null, undefined, and empty string
+                            alert(validationFields[i].message);
+                            return;
+                        }
+                    }
 
                     if ($scope.passwordEdit.retype_password != $scope.passwordEdit.password) {
                         // empty the retype password field
@@ -790,6 +800,20 @@
 
                 //// Function to send the safety question answer data to api
                 $scope.submitPasswordValidation = function() {  
+
+                    // Validation rules
+                    const validationFields = [
+                        { field: $scope.passwordValidation.sq1, message: "Please Enter The First Safety Question Answer" },
+                        { field: $scope.passwordValidation.sq2, message: "Please Enter The Second Safety Question Answer" },
+                    ];
+
+                    // Check for missing fields
+                    for (let i = 0; i < validationFields.length; i++) {
+                        if (!validationFields[i].field) { // Check for null, undefined, and empty string
+                            alert(validationFields[i].message);
+                            return;
+                        }
+                    }
                     
                     const data = {  
                         mode: "Edit",  
@@ -804,7 +828,9 @@
                     $http.post("<?= base_url('api/forgot_password') ?>", data).then(function(response) {  
                         if (response.data.status == "OK") {
                             // Handle success  
-                            console.log('Account validation successfully:', response.data);  
+                            console.log('Account validation successfully:', response.data);
+                            $scope.passwordValidation.sq1 = "";
+                            $scope.passwordValidation.sq2 = "";  
                             $('#passwordValidationModal').modal('hide'); // Hide the validation modal  
                             $('#editUserPwModal').modal('show'); // Show the modal  
                         } else {
@@ -841,6 +867,20 @@
                 //// Function to send the edited user information data to api
                 $scope.submitEditUserInfo = function() {  
                     
+                    // Validation rules
+                    const validationFields = [
+                        { field: $scope.userInfoEdit.name, message: "Please Enter Your User Name" },
+                        { field: $scope.userInfoEdit.email, message: "Please Enter Your Email" },
+                    ];
+
+                    // Check for missing fields
+                    for (let i = 0; i < validationFields.length; i++) {
+                        if (!validationFields[i].field) { // Check for null, undefined, and empty string
+                            alert(validationFields[i].message);
+                            return;
+                        }
+                    }
+
                     const data = {  
                         mode: "Edit",  
                         id: $scope.userInfoEdit.id,  

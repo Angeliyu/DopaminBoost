@@ -513,8 +513,18 @@
                     tobeSubmit["due_date"] = $scope.formDetail.due_date;
 
                     if ($scope.formDetail.type == 1) {
+                        if (!$scope.todo_task_desc || $scope.todo_task_desc == "") {
+                            alert("Task Description Cannot Empty.");
+                            return;
+                        }
                         tobeSubmit["content_description"] = $scope.todo_task_desc;
                     } else if ($scope.formDetail.type == 2) {
+                        if (!$scope.checkbox_details_row || 
+                            $scope.checkbox_details_row.length === 0 || 
+                            $scope.checkbox_details_row.some(item => item.item.trim() === "")) {
+                            alert("All checklist items must have text. Please fill in all items before submitting.");
+                            return;
+                        }
                         tobeSubmit["content_description"] = JSON.stringify($scope.checkbox_details_row);
                     }
 
@@ -525,7 +535,7 @@
                         loadinghide();
                         if (response.data.status == "OK") {
                             console.log(response);
-                            location.href = "<?= base_url('admin_kanban_details_todo'); ?>/" + user_id + "/" + token;
+                            location.href = "<?= base_url('admin_kanban_details_todo'); ?>/" + $scope.user_id + "/" + $scope.token;
                         } else {
                             console.log("no ok", response.data);
                             alert(response.data.result);

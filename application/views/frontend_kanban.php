@@ -64,10 +64,10 @@
                             <td style="width: 60%; text-align: center;"><p style="text-align: bottom; color: grey;">Kanban Name</p> 
                                 <br/> 
                                 <h2 class="page-title"><b> {{ formDetail.name }} </b> <button class="btn btn-info" style="font-weight: bold;" ng-click="openEditKanbanName()" ng-if="userId == formDetail.owned_by">Edit</button> 
-                                <br> <button class="btn btn-success" style="font-size: 20px; border-radius: 12px; padding: 5px;" ng-if="formDetail.todo.length < 1 && formDetail.doing.length < 1 && formDetail.done.length > 1" ng-click="kanban_complete()">COMPLETE KANBAN</button> </h2>
+                                <br> <button class="btn btn-success" style="font-size: 20px; border-radius: 12px; padding: 5px;" ng-if="formDetail.todo.length < 1 && formDetail.doing.length < 1 && formDetail.done.length > 0" ng-click="kanban_complete()">COMPLETE KANBAN</button> </h2>
                             </td>
                             <td style="width: 10%; text-align: center; word-wrap: normal;" ng-if="!logout_status"><i class="fa fa-bell" style="cursor: pointer; font-size: 50px; color: #0d6efd;" ng-click="openNotificationData()"></i><br/>Notification</td>
-                            <td style="width: 10%; text-align: center; word-wrap: normal;" ng-if="!logout_status"><i class="fa fa-users" style="cursor: pointer; font-size: 50px; color: #0d6efd;" ng-click="showMember()"></i><br/>Member Lists</td>
+                            <td style="width: 10%; text-align: center; word-wrap: normal;" ng-if="!logout_status"><i class="fa fa-users" style="cursor: pointer; font-size: 50px; color: #0d6efd;" ng-click="showMember()"></i><br/>Member List</td>
                         </tr>
                     </tbody>
                 </table>
@@ -229,6 +229,7 @@
                                             </div>  
                                             <br/>  
                                             <p style="border-bottom: 1px solid black;">Due Date: <br/>{{ task.due_date }}</p>  
+                                            <p style="border-bottom: 1px solid black;">Complete Date: <br/>{{ task.modified_date }}</p>  
                                             <br/>  
                                             <p style="border-bottom: 1px solid black;"><i>Created by: <br/>{{ task.created_user }}</i></p>  
                                         </div>
@@ -248,9 +249,7 @@
                 <div class="modal-content">  
                     <div class="modal-header">  
                         <h5 class="modal-title" id="editTodoTaskModalLabel">Edit Todo Task {{ editedTask.id }}</h5>  
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" ng-click="closeEditTodoData()">  
-                            <span aria-hidden="true">&times;</span>  
-                        </button>  
+                        <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close" ng-click="closeEditTodoData()"></button>  
                     </div>  
                     <div class="modal-body">  
                         <form id="editTaskForm">
@@ -299,9 +298,7 @@
                 <div class="modal-content">  
                     <div class="modal-header">  
                         <h5 class="modal-title" id="editDoingTaskModalLabel">Edit Doing Task {{ editedDoingTask.id }}</h5>  
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" ng-click="closeEditDoingData()">  
-                            <span aria-hidden="true">&times;</span>  
-                        </button>  
+                        <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close" ng-click="closeEditDoingData()">  </button>  
                     </div>  
                     <div class="modal-body">  
                         <form id="editDoingTaskForm">
@@ -365,7 +362,7 @@
                                         <input type="radio" ng-model="addTodoTask.type" value="1"> Description
                                     </label>
                                     <label class="radio-inline ml-3">
-                                        <input type="radio" ng-model="addTodoTask.type" value="2"> Bullet Points
+                                        <input type="radio" ng-model="addTodoTask.type" value="2"> Check List
                                     </label>
                                 </div>
                             </div>  
@@ -374,7 +371,7 @@
                                 <textarea class="form-control" id="add_todo_taskDescription" ng-model="addTodoTask.content_description" required></textarea>  
                             </div>  
                             <div class="form-group" ng-if="addTodoTask.type == 2">  
-                                <label for="add_todo_taskBulletDescription">Bullet Points</label><small style="color:red;"><i> *required</i></small>
+                                <label for="add_todo_taskBulletDescription">Check List</label><small style="color:red;"><i> *required</i></small>
                                 <br/>
                                 <small style="color: red;"><i>Enter Checkbox Details One By One</i></small>
                                 <ul class="list-unstyled">
@@ -423,7 +420,7 @@
                                         <input type="radio" ng-model="addDoingTask.type" value="1"> Description
                                     </label>
                                     <label class="radio-inline ml-3">
-                                        <input type="radio" ng-model="addDoingTask.type" value="2"> Bullet Points
+                                        <input type="radio" ng-model="addDoingTask.type" value="2"> Check List
                                     </label>
                                 </div>
                             </div>  
@@ -432,7 +429,7 @@
                                 <textarea class="form-control" id="add_doing_taskDescription" ng-model="addDoingTask.content_description" required></textarea>  
                             </div>  
                             <div class="form-group" ng-if="addDoingTask.type == 2">  
-                                <label for="add_doing_taskBulletDescription">Bullet Points</label><small style="color:red;"><i> *required</i></small>
+                                <label for="add_doing_taskBulletDescription">Check List</label><small style="color:red;"><i> *required</i></small>
                                 <br/>
                                 <small style="color: red;"><i>Enter Checkbox Details One By One</i></small>
                                 <ul class="list-unstyled">
@@ -461,11 +458,11 @@
         </div> 
 
         <!-- Members Modal -->
-        <div class="modal fade" id="membersModal" tabindex="-1" aria-labelledby="membersModalLabel" aria-hidden="true">
+        <div class="modal fade" id="membersModal" tabindex="-1" aria-labelledby="membersModal" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="membersModalLabel">Members List</h5>
+                        <h5 class="modal-title" id="membersModal">Member List</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
@@ -620,7 +617,7 @@
                     </div>  
                     <div class="modal-footer">  
                         <button type="button" class="btn btn-secondary" data-dismiss="modal" ng-click="closeEditKanbanName()">Close</button>  
-                        <button type="button" class="btn btn-primary" ng-click="submitEditKanbanName()">Save changes</button>  
+                        <button type="button" class="btn btn-primary" ng-click="submitEditKanbanName()" ng-disabled="edit_kanban_name == ''">Save changes</button>  
                     </div>  
                 </div>  
             </div>  
@@ -804,7 +801,9 @@
 
                 //// Function to add a new task item in add todo task modal
                 $scope.addTodoTaskDetail_new = function() {
-                    $scope.addTodoTask.add_todo_checkList = [];
+                    if (!$scope.addTodoTask.add_todo_checkList) {
+                        $scope.addTodoTask.add_todo_checkList = []; // Initialize if not set
+                    }
                     $scope.addTodoTask.add_todo_checkList.push({ item: "", checked: false });
                 };
 
@@ -832,6 +831,12 @@
 
                     // Convert bullet points into the desired format if type is 2  
                     if ($scope.addTodoTask.type == 2) {
+                        if (!$scope.addTodoTask.add_todo_checkList || 
+                            $scope.addTodoTask.add_todo_checkList.length === 0 || 
+                            $scope.addTodoTask.add_todo_checkList.some(item => item.item.trim() === "")) {
+                            alert("All checklist items must have text. Please fill in all items before submitting.");
+                            return;
+                        }
                         $scope.addTodoTask.content_description = JSON.stringify($scope.addTodoTask.add_todo_checkList);
                     }
 
@@ -883,7 +888,9 @@
 
                 //// Function to add a new task item in add todo task modal
                 $scope.addDoingTaskDetail_new = function() {
-                    $scope.addDoingTask.add_todo_checkList = [];
+                    if (!$scope.addDoingTask.add_todo_checkList) {
+                        $scope.addDoingTask.add_todo_checkList = []; // Initialize if not set
+                    }
                     $scope.addDoingTask.add_todo_checkList.push({ item: "", checked: false });
                 };
 
@@ -911,6 +918,12 @@
 
                     // Convert bullet points into the desired format if type is 2  
                     if ($scope.addDoingTask.type == 2) {
+                        if (!$scope.addDoingTask.add_todo_checkList || 
+                            $scope.addDoingTask.add_todo_checkList.length === 0 || 
+                            $scope.addDoingTask.add_todo_checkList.some(item => item.item.trim() === "")) {
+                            alert("All checklist items must have text. Please fill in all items before submitting.");
+                            return;
+                        }
                         $scope.addDoingTask.content_description = JSON.stringify($scope.addDoingTask.add_todo_checkList);
                     }
 
@@ -964,7 +977,8 @@
 
                 //// Function to close the modal
                 $scope.closeEditTodoData = function(task) {  
-                    $('#editTodoTaskModal').modal('hide'); // CLose the modal  
+                    $('#editTodoTaskModal').modal('hide'); // Close the modal  
+                    location.href = '<?= base_url('kanban/') ?>' + $scope.id + '/' + $scope.userId + '/' + $scope.token; // refresh page
                 };  
 
                 //// Ensure it initializes as an array
@@ -999,6 +1013,13 @@
 
                     // Convert bullet points into the desired format if type is 2  
                     if ($scope.editedTask.type == 2) {
+                        if (!$scope.editedTask.todo_parsedDescription || 
+                            $scope.editedTask.todo_parsedDescription.length === 0 || 
+                            $scope.editedTask.todo_parsedDescription.some(item => item.item.trim() === "")) {
+                            alert("All checklist items must have text. Please fill in all items before submitting.");
+                            return;
+                        }
+
                         $scope.editedTask.content_description = JSON.stringify($scope.editedTask.todo_parsedDescription);
                     }
 
@@ -1050,7 +1071,8 @@
 
                 //// Function to close the modal
                 $scope.closeEditDoingData = function(task) {  
-                    $('#editDoingTaskModal').modal('hide'); // CLose the modal  
+                    $('#editDoingTaskModal').modal('hide'); // Close the modal  
+                    location.href = '<?= base_url('kanban/') ?>' + $scope.id + '/' + $scope.userId + '/' + $scope.token; // refresh page
                 };  
 
                 //// Ensure it initializes as an array
@@ -1072,6 +1094,14 @@
 
                     // Convert bullet points into the desired format if type is 2  
                     if ($scope.editedDoingTask.type == 2) {
+
+                        if (!$scope.editedDoingTask.doing_parsedDescription || 
+                            $scope.editedDoingTask.doing_parsedDescription.length === 0 || 
+                            $scope.editedDoingTask.doing_parsedDescription.some(item => item.item.trim() === "")) {
+                            alert("All checklist items must have text. Please fill in all items before submitting.");
+                            return;
+                        }
+
                         $scope.editedDoingTask.content_description = JSON.stringify($scope.editedDoingTask.doing_parsedDescription);
                     }
 
@@ -1161,11 +1191,11 @@
                         // Call the moving data API  
                         $http.post("<?= base_url('api/completed') ?>", data).then(function(response) {  
                             if (response.data.status == "OK") {  
-                                  
+                                
+                                alert("Congratulation!");
+
                                 // Trigger fireworks animation
                                 triggerFireworks();
-
-                                alert("Congratulation!");
 
                                 // Delay redirect to let animation play for 3 seconds
                                 setTimeout(function() {
@@ -1264,6 +1294,10 @@
 
                             } else {  
                                 alert(response.data.message);
+                                
+                                setTimeout(function() {  
+                                    location.href = '<?= base_url('kanban/') ?>' + $scope.id + '/' + $scope.userId + '/' + $scope.token;
+                                }, 1000); 
                             }  
                         }, function(response) {  
                             alert(response.data.message);
@@ -1371,6 +1405,8 @@
                     };  
 
                     if (confirm("Do You Want To Invite New Member?")) {
+
+                        $('#membersModal').modal('hide');  
 
                         // Call the get available users API   
                         $http.post("<?= base_url('api/getAvailableUsers') ?>", dataToSend).then(function(response) {  
@@ -1654,11 +1690,7 @@
 
                             }  
                         }, function(response) {  
-                            alert("Error: " + response.data.result);  
-
-                            // setTimeout(function() {  
-                            //     location.href = '<?= base_url('profile/') ?>' + $scope.userId + '/' + $scope.token; 
-                            // }, 1000); 
+                            alert("Error: " + response.data.message);  
 
                             setTimeout(function() {  
                                 window.location.href = '<?= base_url('') ?>';

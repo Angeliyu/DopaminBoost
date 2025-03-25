@@ -304,7 +304,7 @@ class KanbanDetailsTodo_api extends MY_apicontroller {
                                 'type' => 2, // task updated
                                 'created_by' => $created_by,
                                 'kanban_id' => $kanban_id,
-                                'message' => 'The task: <b>' . $content_title . '<b/> has been updated in Todo Category. Updated by <b>' . $userData['name'] . '</b>(admin).',
+                                'message' => 'The task: <b>' . $content_title . '</b> has been updated in Todo Category. Updated by <b>' . $userData['name'] . '</b>(admin).',
                                 'created_date' => date("Y-m-d H:i:s"),
                             ));
                         }

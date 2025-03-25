@@ -529,8 +529,18 @@
                     tobeSubmit["due_date"] = $scope.formDetail.due_date;
 
                     if ($scope.formDetail.type == 1) {
+                        if (!$scope.done_task_desc || $scope.done_task_desc == "") {
+                            alert("Task Description Cannot Empty.");
+                            return;
+                        }
                         tobeSubmit["content_description"] = $scope.done_task_desc;
                     } else if ($scope.formDetail.type == 2) {
+                        if (!$scope.checkbox_details_row || 
+                            $scope.checkbox_details_row.length === 0 || 
+                            $scope.checkbox_details_row.some(item => item.item.trim() === "")) {
+                            alert("All checklist items must have text. Please fill in all items before submitting.");
+                            return;
+                        }
                         tobeSubmit["content_description"] = JSON.stringify($scope.checkbox_details_row);
                     }
 

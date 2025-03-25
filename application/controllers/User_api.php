@@ -830,7 +830,7 @@ class User_api extends MY_apicontroller {
 					$users_in_kanban = array_merge($users_in_kanban, $memberArray);
 				}
 
-				$all_users = $this->{$this->data['main_model']}->fetch2('id,name');
+				$all_users = $this->{$this->data['main_model']}->fetch2('id,name,email');
 
 				// filters all_users to exclude those already in $users_in_kanban
 				$available_users = array_filter($all_users, function ($user) use ($users_in_kanban) {

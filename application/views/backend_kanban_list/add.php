@@ -124,28 +124,13 @@
                                                         </div>  
                                                     </div>
 
-                                                    <!-- <div class="mb-2 row" ng-if="mode == 'Add'">  
-                                                        <div class="col-md-4">
-                                                            <label for="add_user_ids" class="form-label" ng-if="formDetail.member == '' || formDetail.member == null">Members</label>  
-                                                            <label for="add_user_ids" class="form-label" ng-if="formDetail.member.length > 0">Reselect Members</label>  
-                                                        
-                                                            <select class="form-select" ng-model="formDetail.member" name="add_user_ids" id="add_user_ids" multiple data-toggle="select2">  
-                                                                <?php if (!empty($userList)) {  
-                                                                    foreach ($userList as $v) { ?>  
-                                                                        <option value="<?= $v['id'] ?>"><?= $v['name'] ?></option>  
-                                                                <?php }  
-                                                                } ?>  
-                                                            </select>  
-                                                        </div>  
-                                                    </div> -->
-
-                                                    <div class="mb-2 row" ng-if="formDetail.member.length > 0">  
+                                                    <div class="mb-2 row" ng-if="formDetail.original_member.length > 0">  
                                                         <label for="joined_user_ids" class="form-label">Joined Member(s)</label>  
                                                         <div>
                                                             <ul>
                                                                 <?php if (!empty($userList)) {  
                                                                     foreach ($userList as $v) { ?>  
-                                                                        <li ng-if="formDetail.member.includes('<?= $v['id'] ?>')">
+                                                                        <li ng-if="formDetail.original_member.includes('<?= $v['id'] ?>')">
                                                                             <?= $v['name'] ?>
                                                                         </li>  
                                                                 <?php }  
@@ -161,7 +146,7 @@
 
                                                             <br/>
                                                             <button class="btn btn-secondary" type="button" ng-click="toggleDropdown()" ng-if="mode == 'Edit'">
-                                                                Select Members <span class="caret"></span>
+                                                                Reselect Members <span class="caret"></span>
                                                             </button>
                                                             <button class="btn btn-secondary" type="button" ng-click="getAllExceptLeader()" ng-if="mode == 'Add'">
                                                                 Select Member(s) <span class="caret"></span>
@@ -190,40 +175,6 @@
                                                                     </li>
                                                                 </ul>
                                                             </div>
-
-                                                            <!-- <select class="form-multi-select"
-                                                                ng-model="reselect_member"
-                                                                name="user_ids"
-                                                                id="user_ids"
-                                                                multiple
-                                                                ng-options="user.id as user.name for user in all_available_users track by user.id">
-                                                            </select> -->
-
-                                                            <!-- <ng-select class="form-multi-select"
-                                                                multiple
-                                                                ng-model="formDetail.member"
-                                                                name="user_ids"
-                                                                id="user_ids"
-                                                                options="user.id as user.name for user in userList"
-                                                                placeholder="Select options">
-                                                            </ng-select> -->
-
-                                                            <!-- <select class="form-select" ng-model="formDetail.member" name="user_ids" id="user_ids" multiple>  
-                                                                <?php if (!empty($userList)) {  
-                                                                    foreach ($userList as $v) { ?>  
-                                                                        <option value="<?= $v['id'] ?>"><?= $v['name'] ?></option>  
-                                                                <?php }  
-                                                                } ?>  
-                                                            </select>   -->
-                                                        
-                                                            <!-- <select class="form-select" ng-model="formDetail.member" name="user_ids" id="user_ids" multiple data-toggle="select2" ng-change="searchMultipleUser(formDetail.member)">  
-                                                                <?php if (!empty($userList)) {  
-                                                                    foreach ($userList as $v) { ?>  
-                                                                        <option value="<?= $v['id'] ?>"><?= $v['name'] ?></option>  
-                                                                <?php }  
-                                                                } ?>  
-                                                            </select>   -->
-
                                                         </div>  
                                                     </div>
                                                     
@@ -289,9 +240,11 @@
 
                 console.log("Member list:", $scope.userList);
 
+
                 // Toggle dropdown visibility
                 $scope.toggleDropdown = function () {
                     $scope.dropdownOpen = !$scope.dropdownOpen;
+                    $scope.formDetail.member = [];
                     console.log("able dropdown", $scope.dropdownOpen);
                 };
 
@@ -340,7 +293,7 @@
                             $scope.errorAlert = false;
                             console.log("response", response);
                             $scope.formDetail = response.data.result.kanbanDetail;
-                            $scope.formDetail.member = $scope.formDetail.member.split(',');
+                            $scope.formDetail.original_member = $scope.formDetail.member.split(',');
                             console.log("formDetail", $scope.formDetail);
 
                             if ($scope.formDetail.id != null) {
@@ -439,6 +392,19 @@
                     console.log("original member users", $scope.formDetail.member);
 
                     console.log("reselect members", $scope.reselect_member);
+
+                    // Validation rules
+                    const validationFields = [
+                        { field: $scope.formDetail.owned_by, message: "Please Select Kanban Leader" },
+                    ];
+
+                    // Check for missing fields
+                    for (let i = 0; i < validationFields.length; i++) {
+                        if (!validationFields[i].field) { // Check for null, undefined, and empty string
+                            alert(validationFields[i].message);
+                            return;
+                        }
+                    }
 
                     if ($scope.mode == 'Edit') {
                         if ($scope.reselect_member.length > 0) {  // check if array is not empty
