@@ -2,7 +2,7 @@
 Kanban-style Task Management Web Application
 
 
-Built by:
-Tool: Visual Studio Code, XAMPP
-Database: MYSQL (phpMyAdmin)
+Built by: <br/>
+Tool: Visual Studio Code, XAMPP <br/>
+Database: MYSQL (phpMyAdmin) <br/>
 Language: PHP, Javascript, HTML + CSS, AngularJs
