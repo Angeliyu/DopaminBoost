@@ -63,8 +63,8 @@
                             <td style="width: 20%; text-align: left;" class="header_image"><img src="<?= base_url('assets/img/Dopamin_Boost_logo.png') ?>" alt="Logo" style="max-width: 80%; margin-top: 0.7%; margin-left: -1%;" /></td>
                             <td style="width: 60%; text-align: center;"><p style="text-align: bottom; color: grey;">Kanban Name</p> 
                                 <br/> 
-                                <h2 class="page-title"><b> {{ formDetail.name }} </b> <button class="btn btn-info" style="font-weight: bold;" ng-click="openEditKanbanName()" ng-if="userId == formDetail.owned_by">Edit</button> 
-                                <br> <button class="btn btn-success" style="font-size: 20px; border-radius: 12px; padding: 5px;" ng-if="formDetail.todo.length < 1 && formDetail.doing.length < 1 && formDetail.done.length > 0" ng-click="kanban_complete()">COMPLETE KANBAN</button> </h2>
+                                <h2 class="page-title"><b> {{ formDetail.name }} </b> <button class="btn btn-info" style="font-weight: bold;" ng-click="openEditKanbanName()" ng-if="userId == formDetail.owned_by && !logout_status">Edit</button> 
+                                <br> <button class="btn btn-success" style="font-size: 20px; border-radius: 12px; padding: 5px;" ng-if="formDetail.todo.length < 1 && formDetail.doing.length < 1 && formDetail.done.length > 0  && !logout_status" ng-click="kanban_complete()">COMPLETE KANBAN</button> </h2>
                             </td>
                             <td style="width: 10%; text-align: center; word-wrap: normal;" ng-if="!logout_status"><i class="fa fa-bell" style="cursor: pointer; font-size: 50px; color: #0d6efd;" ng-click="openNotificationData()"></i><br/>Notification</td>
                             <td style="width: 10%; text-align: center; word-wrap: normal;" ng-if="!logout_status"><i class="fa fa-users" style="cursor: pointer; font-size: 50px; color: #0d6efd;" ng-click="showMember()"></i><br/>Member List</td>

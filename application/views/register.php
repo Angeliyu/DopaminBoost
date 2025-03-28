@@ -151,7 +151,7 @@
             <div class="row align-items-center">
                 <div>
                     <br/>
-                    <h4 class="page-title" style="text-align: center;"><a href="<?= base_url('') ?>" style="color: black; text-decoration: underline;"> Login</a> | <a href="" style="color: black; text-decoration: underline;"> Forgot Password </a> </h4>  
+                    <h4 class="page-title" style="text-align: center;"><a href="<?= base_url('') ?>" style="color: black; text-decoration: underline;"> Login</a> | <a href="<?= base_url('forgot_password_validation') ?>" style="color: black; text-decoration: underline;"> Forgot Password </a> </h4>  
                 </div>
             </div>
         </div> <!-- content -->
