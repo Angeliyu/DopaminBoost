@@ -597,10 +597,14 @@ class User_api extends MY_apicontroller {
 
 				$name = $this->input->post("name", true);
                 $email = $this->input->post("email", true);
+				$safety_answer_1 = $this->input->post("safety_answer_1", true);
+				$safety_answer_2 = $this->input->post("safety_answer_2", true);
 				
 				$sql = array(
 					'name' => $name,
                     'email' => $email,
+					'safety_word_1' => $safety_answer_1,
+					'safety_word_2' => $safety_answer_2,
 				);
 
                 $ID = null;

@@ -312,7 +312,20 @@
                             <div class="form-group">  
                                 <label for="edit_profile_user_email">Email</label>  
                                 <input type="text" class="form-control" id="edit_profile_user_email" ng-model="userInfoEdit.email" required>  
-                            </div>    
+                            </div>   
+                            <small style="color: red;"><i>*Safety questions used for Forgot Password</i></small>
+
+                            <div class="form-group">  
+                                <label for="ori_safety_validation_1">Safety Question 1</label>  
+                                <p style="font-weight: bold;">Which song do you most often play on repeat?</p>
+                                <input type="text" class="form-control" id="ori_safety_validation_1" ng-model="formDetail.safety_word_1" required>  
+                            </div>  
+                            <br/>
+                            <div class="form-group">  
+                                <label for="ori_safety_validation_1">Safety Question 2</label>  
+                                <p style="font-weight: bold;">Where is your hometown?</p>
+                                <input type="text" class="form-control" id="ori_safety_validation_1" ng-model="formDetail.safety_word_2" required>  
+                            </div> 
                             
                             <input type="hidden" ng-model="userInfoEdit.id"> <!-- Hidden input for user ID -->  
                         </form>  
@@ -871,6 +884,8 @@
                     const validationFields = [
                         { field: $scope.userInfoEdit.name, message: "Please Enter Your User Name" },
                         { field: $scope.userInfoEdit.email, message: "Please Enter Your Email" },
+                        { field: $scope.formDetail.safety_word_1, message: "Please Enter Your Answer For Safety Question 1" },
+                        { field: $scope.formDetail.safety_word_2, message: "Please Enter Your Answer For Safety Question 1" },
                     ];
 
                     // Check for missing fields
@@ -886,7 +901,8 @@
                         id: $scope.userInfoEdit.id,  
                         name: $scope.userInfoEdit.name, 
                         email: $scope.userInfoEdit.email, 
-                        
+                        safety_answer_1 : $scope.formDetail.safety_word_1,
+                        safety_answer_2 : $scope.formDetail.safety_word_2,
                     };
 
                     console.log("data", data);
